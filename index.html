@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TeXflow 快排版</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260508-rico1" />
   </head>
   <body>
     <header class="topbar">
@@ -43,152 +43,166 @@
           <button class="ghost-button compact" type="button" id="fullscreenButton">专注预览</button>
         </div>
 
-        <section class="design-panel" aria-label="排版样式设置">
-          <div class="theme-card">
-            <div class="theme-card-header">
-              <div class="theme-section active">公众号主题</div>
+        <div class="workbench-layout">
+          <aside class="side-panel" aria-label="排版设置">
+            <div class="side-panel-header">
+              <strong>排版设置</strong>
+              <span>主题、文本框、字体</span>
             </div>
-            <div class="theme-grid" aria-label="推荐主题">
-              <button class="theme-chip active" type="button" data-theme="long">长方矩</button>
-              <button class="theme-chip" type="button" data-theme="gov">政务</button>
-              <button class="theme-chip" type="button" data-theme="minimal">极简</button>
-              <button class="theme-chip" type="button" data-theme="digital">数字</button>
-              <button class="theme-chip" type="button" data-theme="block">区块</button>
-              <button class="theme-chip" type="button" data-theme="contrast">对角</button>
-            </div>
-            <div class="palette-row" aria-label="配色">
-              <button class="palette-dot active" type="button" data-palette="#004038" style="--dot:#004038"></button>
-              <button class="palette-dot" type="button" data-palette="#00544c" style="--dot:#00544c"></button>
-              <button class="palette-dot" type="button" data-palette="#2f69ff" style="--dot:#2f69ff"></button>
-              <button class="palette-dot" type="button" data-palette="#151a1e" style="--dot:#151a1e"></button>
-              <button class="palette-dot" type="button" data-palette="#ad4f43" style="--dot:#ad4f43"></button>
-              <button class="palette-dot" type="button" data-palette="#d4472f" style="--dot:#d4472f"></button>
-            </div>
-            <div class="module-mixer" aria-label="混搭排版模块">
-              <label>
-                <span>标题</span>
-                <select id="headingStyleSelect">
-                  <option value="bar">政务标题条</option>
-                  <option value="center">居中分隔</option>
-                  <option value="stamp">红蓝章法</option>
-                  <option value="numbered">编号序列</option>
-                  <option value="plain">极简横线</option>
-                </select>
-              </label>
-              <label>
-                <span>文本框</span>
-                <select id="boxStyleSelect">
-                  <option value="gov">政务蓝框</option>
-                  <option value="court">法院红蓝</option>
-                  <option value="youth">少年普法</option>
-                  <option value="brief">简报提示</option>
-                  <option value="numbered">序号栏目</option>
-                  <option value="quote">引号摘录</option>
-                  <option value="gradient">渐变角标</option>
-                  <option value="media">图文卡片</option>
-                  <option value="none">不用文本框</option>
-                </select>
-              </label>
-              <label>
-                <span>正文</span>
-                <select id="bodyStyleSelect">
-                  <option value="formal">稳重政务</option>
-                  <option value="compact">紧凑简报</option>
-                  <option value="soft">活动亲和</option>
-                  <option value="card">分段卡片</option>
-                </select>
-              </label>
-              <label>
-                <span>图片</span>
-                <select id="imageStyleSelect">
-                  <option value="clean">常规圆角</option>
-                  <option value="frame">政务相框</option>
-                  <option value="full">通栏大图</option>
-                  <option value="stack">图文卡片</option>
-                </select>
-              </label>
-              <label>
-                <span>分隔</span>
-                <select id="dividerStyleSelect">
-                  <option value="dots">圆点短线</option>
-                  <option value="solid">细线分隔</option>
-                  <option value="ribbon">色带分隔</option>
-                  <option value="none">不显示</option>
-                </select>
-              </label>
-            </div>
-          </div>
 
-          <div class="type-controls">
-            <label>
-              <span>字体</span>
-              <select id="fontFamilySelect">
-                <option value="serif">常规黑体</option>
-                <option value="song">宋体正文</option>
-                <option value="hei">现代黑体</option>
-                <option value="kai">楷体温润</option>
-              </select>
-            </label>
-            <label>
-              <span>字号</span>
-              <select id="fontSizeSelect">
-                <option value="15">小号（15号）</option>
-                <option value="16" selected>适中（16号）</option>
-                <option value="18">大号（18号）</option>
-                <option value="20">特大（20号）</option>
-              </select>
-            </label>
-            <label>
-              <span>行间距</span>
-              <select id="lineHeightSelect">
-                <option value="1.65">紧凑（1.65X）</option>
-                <option value="2" selected>适中（2.0X）</option>
-                <option value="2.3">宽松（2.3X）</option>
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <div class="status-row">
-          <p class="file-status" id="fileStatus" aria-live="polite"></p>
-          <div class="stats" aria-live="polite">
-            <span id="charCount">0 字</span>
-            <span id="paragraphCount">0 段</span>
-          </div>
-        </div>
-
-        <div class="workspace-grid">
-          <label class="pane input-pane" id="inputPane">
-            <span class="pane-title">原文</span>
-            <textarea id="sourceText" spellcheck="false" placeholder="把需要整理的文字粘贴到这里..."></textarea>
-          </label>
-
-          <section class="pane preview-pane" id="resultPane" aria-label="排版结果">
-            <div class="result-header">
-              <button class="toc-button" type="button" id="tocButton">目录</button>
-              <strong>公众号预览 · 可编辑</strong>
-              <button class="export-button" type="button" id="exportButton">导出 DOCX</button>
-            </div>
-            <div class="toc-popover" id="tocPopover" aria-label="目录"></div>
-            <article id="preview" class="preview empty result-panel active" contenteditable="true" spellcheck="false">
-              <p>排版后的内容会出现在这里。</p>
-            </article>
-            <div class="task-mask" id="taskMask" hidden>
-              <div class="typing-loader" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
+            <section class="design-panel" aria-label="排版样式设置">
+              <div class="theme-card">
+                <div class="theme-card-header">
+                  <div class="theme-section active">公众号主题</div>
+                </div>
+                <div class="theme-grid" aria-label="推荐主题">
+                  <button class="theme-chip active" type="button" data-theme="long">长方矩</button>
+                  <button class="theme-chip" type="button" data-theme="gov">政务</button>
+                  <button class="theme-chip" type="button" data-theme="minimal">极简</button>
+                  <button class="theme-chip" type="button" data-theme="digital">数字</button>
+                  <button class="theme-chip" type="button" data-theme="block">区块</button>
+                  <button class="theme-chip" type="button" data-theme="contrast">对角</button>
+                </div>
+                <div class="palette-row" aria-label="配色">
+                  <button class="palette-dot active" type="button" data-palette="#004038" style="--dot:#004038"></button>
+                  <button class="palette-dot" type="button" data-palette="#00544c" style="--dot:#00544c"></button>
+                  <button class="palette-dot" type="button" data-palette="#2f69ff" style="--dot:#2f69ff"></button>
+                  <button class="palette-dot" type="button" data-palette="#151a1e" style="--dot:#151a1e"></button>
+                  <button class="palette-dot" type="button" data-palette="#ad4f43" style="--dot:#ad4f43"></button>
+                  <button class="palette-dot" type="button" data-palette="#d4472f" style="--dot:#d4472f"></button>
+                </div>
+                <div class="module-mixer" aria-label="混搭排版模块">
+                  <label>
+                    <span>标题</span>
+                    <select id="headingStyleSelect">
+                      <option value="bar">政务标题条</option>
+                      <option value="center">居中分隔</option>
+                      <option value="stamp">红蓝章法</option>
+                      <option value="numbered">编号序列</option>
+                      <option value="plain">极简横线</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>文本框</span>
+                    <select id="boxStyleSelect">
+                      <option value="gov">政务蓝框</option>
+                      <option value="court">法院红蓝</option>
+                      <option value="youth">少年普法</option>
+                      <option value="brief">简报提示</option>
+                      <option value="numbered">序号栏目</option>
+                      <option value="quote">引号摘录</option>
+                      <option value="gradient">渐变角标</option>
+                      <option value="media">图文卡片</option>
+                      <option value="none">不用文本框</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>正文</span>
+                    <select id="bodyStyleSelect">
+                      <option value="formal">稳重政务</option>
+                      <option value="compact">紧凑简报</option>
+                      <option value="soft">活动亲和</option>
+                      <option value="card">分段卡片</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>图片</span>
+                    <select id="imageStyleSelect">
+                      <option value="clean">常规圆角</option>
+                      <option value="frame">政务相框</option>
+                      <option value="full">通栏大图</option>
+                      <option value="stack">图文卡片</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>分隔</span>
+                    <select id="dividerStyleSelect">
+                      <option value="dots">圆点短线</option>
+                      <option value="solid">细线分隔</option>
+                      <option value="ribbon">色带分隔</option>
+                      <option value="none">不显示</option>
+                    </select>
+                  </label>
+                </div>
               </div>
-              <p>正在整理公众号排版</p>
-              <small>会自动处理标题、文本框、图片位置和重点句</small>
+
+              <div class="type-controls">
+                <label>
+                  <span>字体</span>
+                  <select id="fontFamilySelect">
+                    <option value="serif">常规黑体</option>
+                    <option value="song">宋体正文</option>
+                    <option value="hei">现代黑体</option>
+                    <option value="kai">楷体温润</option>
+                  </select>
+                </label>
+                <label>
+                  <span>字号</span>
+                  <select id="fontSizeSelect">
+                    <option value="15">小号（15号）</option>
+                    <option value="16" selected>适中（16号）</option>
+                    <option value="18">大号（18号）</option>
+                    <option value="20">特大（20号）</option>
+                  </select>
+                </label>
+                <label>
+                  <span>行间距</span>
+                  <select id="lineHeightSelect">
+                    <option value="1.65">紧凑（1.65X）</option>
+                    <option value="2" selected>适中（2.0X）</option>
+                    <option value="2.3">宽松（2.3X）</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <div class="status-row">
+              <p class="file-status" id="fileStatus" aria-live="polite"></p>
+              <div class="stats" aria-live="polite">
+                <span id="charCount">0 字</span>
+                <span id="paragraphCount">0 段</span>
+              </div>
             </div>
-          </section>
+          </aside>
+
+          <div class="workspace-stack">
+            <div class="workspace-grid">
+              <label class="pane input-pane" id="inputPane">
+                <span class="pane-title">原文</span>
+                <textarea id="sourceText" spellcheck="false" placeholder="把需要整理的文字粘贴到这里..."></textarea>
+              </label>
+
+              <section class="pane preview-pane" id="resultPane" aria-label="排版结果">
+                <div class="result-header">
+                  <button class="toc-button" type="button" id="tocButton">目录</button>
+                  <strong>公众号预览 · 可编辑</strong>
+                  <div class="export-actions">
+                    <button class="export-button" type="button" id="exportMdButton">导出 MD</button>
+                    <button class="export-button" type="button" id="exportButton">导出 DOCX</button>
+                  </div>
+                </div>
+                <div class="toc-popover" id="tocPopover" aria-label="目录"></div>
+                <article id="preview" class="preview empty result-panel active" contenteditable="true" spellcheck="false">
+                  <p>排版后的内容会出现在这里。</p>
+                </article>
+                <div class="task-mask" id="taskMask" hidden>
+                  <div class="typing-loader" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <p>正在整理公众号排版</p>
+                  <small>会自动处理标题、文本框、图片位置和重点句</small>
+                </div>
+              </section>
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
     <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
-    <script src="./script.js" type="module"></script>
+    <script src="./script.js?v=20260508-rico1" type="module"></script>
   </body>
 </html>

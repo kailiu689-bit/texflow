@@ -12,6 +12,7 @@ const fileStatus = document.querySelector("#fileStatus");
 const resultPane = document.querySelector("#resultPane");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const exportButton = document.querySelector("#exportButton");
+const exportMdButton = document.querySelector("#exportMdButton");
 const tocButton = document.querySelector("#tocButton");
 const tocPopover = document.querySelector("#tocPopover");
 const taskMask = document.querySelector("#taskMask");
@@ -927,6 +928,23 @@ async function exportWordDocument() {
   );
 }
 
+function exportMarkdownDocument() {
+  const markdown = buildMarkdownOutput("##").trim();
+  if (!markdown) {
+    setFileStatus("没有可导出的 Markdown 内容。", true);
+    return;
+  }
+
+  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "公众号排版稿.md";
+  link.click();
+  URL.revokeObjectURL(url);
+  setFileStatus(`已导出 Markdown 文件，大小约 ${formatBytes(blob.size)}。`);
+}
+
 async function copyOutput() {
   const text = buildMarkdownOutput("");
 
@@ -1276,6 +1294,14 @@ exportButton.addEventListener("click", async () => {
     await exportWordDocument();
   } catch (error) {
     setFileStatus(error.message || "Word 导出失败，请稍后再试。", true);
+  }
+});
+
+exportMdButton.addEventListener("click", () => {
+  try {
+    exportMarkdownDocument();
+  } catch (error) {
+    setFileStatus(error.message || "Markdown 导出失败，请稍后再试。", true);
   }
 });
 
