@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TeXflow 快排版</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="TeXflow 首页">
+        <span class="brand-mark">T</span>
+        <span>TeXflow</span>
+      </a>
+      <span class="topbar-note">公众号排版工作台</span>
+    </header>
+
+    <main>
+      <section class="hero" id="workspace">
+        <div class="hero-copy">
+          <p class="eyebrow">AI TEXT TYPESSETTING</p>
+          <h1>把凌乱文字，整理成能直接发布的专业排版。</h1>
+          <p class="hero-lede">
+            粘贴文章或公众号草稿，TeXflow 会自动分段、识别标题、突出重点，
+            并生成清爽的发布稿。
+          </p>
+          <div class="hero-actions">
+            <a class="primary-button" href="#editor">开始排版</a>
+            <button class="secondary-button" type="button" id="loadDemo">载入示例</button>
+          </div>
+        </div>
+
+        <div class="proof-panel" aria-label="排版效果预览">
+          <div class="proof-toolbar">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <article>
+            <p class="mini-title">优化前</p>
+            <p>研究记录内容散乱。标题不明显。重点藏在段落中。</p>
+            <p class="mini-title accent">优化后</p>
+            <h2>研究记录：从素材到结构</h2>
+            <p>
+              <strong>系统会先识别段落逻辑</strong>，再把关键结论放到读者最容易扫到的位置。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="editor-shell" id="editor" aria-label="智能排版编辑器">
+        <div class="editor-heading">
+          <div>
+            <p class="eyebrow">WECHAT ARTICLE TYPESETTING</p>
+            <h2>公众号排版工作台</h2>
+          </div>
+        </div>
+
+        <div class="tool-row" role="toolbar" aria-label="排版工具">
+          <label class="toggle">
+            <input type="checkbox" id="highlightToggle" checked />
+            <span>突出重点</span>
+          </label>
+          <label class="upload-button" for="fileInput">上传附件</label>
+          <input
+            id="fileInput"
+            class="file-input"
+            type="file"
+            accept=".txt,.md,.markdown,.tex,.csv,.pdf,.doc,.docx,.wps,.png,.jpg,.jpeg,.webp,text/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+          />
+          <button class="ghost-button compact" type="button" id="insertBoxButton">插入文本框</button>
+          <button class="secondary-button compact" type="button" id="formatButton">一键排版</button>
+          <button class="primary-button compact" type="button" id="copyButton">复制到公众号</button>
+          <button class="ghost-button compact" type="button" id="fullscreenButton">专注预览</button>
+        </div>
+
+        <section class="design-panel" aria-label="排版样式设置">
+          <div class="theme-card">
+            <div class="theme-card-header">
+              <div class="theme-section active">公众号主题</div>
+            </div>
+            <div class="theme-grid" aria-label="推荐主题">
+              <button class="theme-chip active" type="button" data-theme="long">长方矩</button>
+              <button class="theme-chip" type="button" data-theme="gov">政务</button>
+              <button class="theme-chip" type="button" data-theme="minimal">极简</button>
+              <button class="theme-chip" type="button" data-theme="digital">数字</button>
+              <button class="theme-chip" type="button" data-theme="block">区块</button>
+              <button class="theme-chip" type="button" data-theme="contrast">对角</button>
+            </div>
+            <div class="palette-row" aria-label="配色">
+              <button class="palette-dot active" type="button" data-palette="#004038" style="--dot:#004038"></button>
+              <button class="palette-dot" type="button" data-palette="#00544c" style="--dot:#00544c"></button>
+              <button class="palette-dot" type="button" data-palette="#2f69ff" style="--dot:#2f69ff"></button>
+              <button class="palette-dot" type="button" data-palette="#151a1e" style="--dot:#151a1e"></button>
+              <button class="palette-dot" type="button" data-palette="#ad4f43" style="--dot:#ad4f43"></button>
+              <button class="palette-dot" type="button" data-palette="#d4472f" style="--dot:#d4472f"></button>
+            </div>
+            <div class="module-mixer" aria-label="混搭排版模块">
+              <label>
+                <span>标题</span>
+                <select id="headingStyleSelect">
+                  <option value="bar">政务标题条</option>
+                  <option value="center">居中分隔</option>
+                  <option value="stamp">红蓝章法</option>
+                  <option value="numbered">编号序列</option>
+                  <option value="plain">极简横线</option>
+                </select>
+              </label>
+              <label>
+                <span>文本框</span>
+                <select id="boxStyleSelect">
+                  <option value="gov">政务蓝框</option>
+                  <option value="court">法院红蓝</option>
+                  <option value="youth">少年普法</option>
+                  <option value="brief">简报提示</option>
+                  <option value="numbered">序号栏目</option>
+                  <option value="quote">引号摘录</option>
+                  <option value="gradient">渐变角标</option>
+                  <option value="media">图文卡片</option>
+                  <option value="none">不用文本框</option>
+                </select>
+              </label>
+              <label>
+                <span>正文</span>
+                <select id="bodyStyleSelect">
+                  <option value="formal">稳重政务</option>
+                  <option value="compact">紧凑简报</option>
+                  <option value="soft">活动亲和</option>
+                  <option value="card">分段卡片</option>
+                </select>
+              </label>
+              <label>
+                <span>图片</span>
+                <select id="imageStyleSelect">
+                  <option value="clean">常规圆角</option>
+                  <option value="frame">政务相框</option>
+                  <option value="full">通栏大图</option>
+                  <option value="stack">图文卡片</option>
+                </select>
+              </label>
+              <label>
+                <span>分隔</span>
+                <select id="dividerStyleSelect">
+                  <option value="dots">圆点短线</option>
+                  <option value="solid">细线分隔</option>
+                  <option value="ribbon">色带分隔</option>
+                  <option value="none">不显示</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="type-controls">
+            <label>
+              <span>字体</span>
+              <select id="fontFamilySelect">
+                <option value="serif">常规黑体</option>
+                <option value="song">宋体正文</option>
+                <option value="hei">现代黑体</option>
+                <option value="kai">楷体温润</option>
+              </select>
+            </label>
+            <label>
+              <span>字号</span>
+              <select id="fontSizeSelect">
+                <option value="15">小号（15号）</option>
+                <option value="16" selected>适中（16号）</option>
+                <option value="18">大号（18号）</option>
+                <option value="20">特大（20号）</option>
+              </select>
+            </label>
+            <label>
+              <span>行间距</span>
+              <select id="lineHeightSelect">
+                <option value="1.65">紧凑（1.65X）</option>
+                <option value="2" selected>适中（2.0X）</option>
+                <option value="2.3">宽松（2.3X）</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <div class="status-row">
+          <p class="file-status" id="fileStatus" aria-live="polite"></p>
+          <div class="stats" aria-live="polite">
+            <span id="charCount">0 字</span>
+            <span id="paragraphCount">0 段</span>
+          </div>
+        </div>
+
+        <div class="workspace-grid">
+          <label class="pane input-pane" id="inputPane">
+            <span class="pane-title">原文</span>
+            <textarea id="sourceText" spellcheck="false" placeholder="把需要整理的文字粘贴到这里..."></textarea>
+          </label>
+
+          <section class="pane preview-pane" id="resultPane" aria-label="排版结果">
+            <div class="result-header">
+              <button class="toc-button" type="button" id="tocButton">目录</button>
+              <strong>公众号预览 · 可编辑</strong>
+              <button class="export-button" type="button" id="exportButton">导出 DOCX</button>
+            </div>
+            <div class="toc-popover" id="tocPopover" aria-label="目录"></div>
+            <article id="preview" class="preview empty result-panel active" data-panel-content="formatted" contenteditable="true" spellcheck="false">
+              <p>排版后的内容会出现在这里。</p>
+            </article>
+            <div class="result-panel visual-panel" data-panel-content="visual">
+              <div class="timeline-board" id="visualPanel"></div>
+            </div>
+            <div class="result-panel magazine-panel" data-panel-content="magazine">
+              <article class="magazine-page" id="magazinePanel"></article>
+            </div>
+            <div class="result-panel card-panel" data-panel-content="card">
+              <div class="knowledge-card" id="cardPanel"></div>
+            </div>
+            <div class="task-mask" id="taskMask" hidden>
+              <div class="typing-loader" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <p>正在整理公众号排版</p>
+              <small>会自动处理标题、文本框、图片位置和重点句</small>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="feature-band" id="features">
+        <div class="feature">
+          <span>01</span>
+          <h3>自动拆段</h3>
+          <p>把长文本拆成更适合阅读的短段，减少手动换行。</p>
+        </div>
+        <div class="feature">
+          <span>02</span>
+          <h3>标题识别</h3>
+          <p>识别序号、冒号和短句标题，自动建立清晰层级。</p>
+        </div>
+        <div class="feature">
+          <span>03</span>
+          <h3>重点标注</h3>
+          <p>将结论、建议、风险等高价值句子加粗呈现。</p>
+        </div>
+      </section>
+
+      <section class="pricing" id="pricing">
+        <div>
+          <p class="eyebrow">SIMPLE START</p>
+          <h2>先把核心体验跑起来。</h2>
+        </div>
+        <p>
+          当前版本在浏览器本地完成排版，适合验证产品方向。后续可以接入登录、模板库、
+          云端草稿和真正的 AI 语义优化。
+        </p>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <script src="./script.js" type="module"></script>
+  </body>
+</html>
