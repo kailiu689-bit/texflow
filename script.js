@@ -45,7 +45,7 @@ let extractedAssets = [];
 let importedBlocks = null;
 let activeTheme = "long";
 let activePlatform = "wechat";
-let activePalette = "#0f9f8f";
+let activePalette = "#004038";
 let headingIndex = 0;
 let calloutIndex = 0;
 let previewDirty = false;
@@ -65,11 +65,11 @@ const copyFontFamilies = {
 };
 
 const themePresets = {
-  long: { heading: "bar", box: "gov", body: "formal", image: "frame", divider: "dots", palette: "#0f9f8f" },
+  long: { heading: "bar", box: "gov", body: "formal", image: "frame", divider: "dots", palette: "#004038" },
   gov: { heading: "bar", box: "brief", body: "formal", image: "frame", divider: "solid", palette: "#2f69ff" },
   minimal: { heading: "plain", box: "none", body: "compact", image: "clean", divider: "solid", palette: "#151a1e" },
   digital: { heading: "numbered", box: "numbered", body: "card", image: "full", divider: "ribbon", palette: "#2f69ff" },
-  block: { heading: "bar", box: "media", body: "card", image: "stack", divider: "solid", palette: "#48c7b6" },
+  block: { heading: "bar", box: "media", body: "card", image: "stack", divider: "solid", palette: "#00544c" },
   contrast: { heading: "stamp", box: "court", body: "compact", image: "frame", divider: "ribbon", palette: "#151a1e" },
 };
 
