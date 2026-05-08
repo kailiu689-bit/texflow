@@ -6,8 +6,10 @@
   --desk: #f1f4fd;
   --line: #d7cdbc;
   --white: #fffdfa;
-  --accent: #0f7b6c;
-  --accent-deep: #075f54;
+  --accent: #0f9f8f;
+  --accent-deep: #065f57;
+  --accent-soft: #48c7b6;
+  --accent-wash: #e8fbf7;
   --red: #d4472f;
   --shadow: 0 24px 70px rgba(39, 31, 18, 0.16);
 }
@@ -402,9 +404,10 @@ p {
 }
 
 .tool-button.active {
-  color: var(--white);
-  background: var(--accent);
-  border-color: var(--accent-deep);
+  color: var(--accent-deep);
+  background: linear-gradient(180deg, #ffffff, var(--accent-wash));
+  border-color: rgba(15, 159, 143, 0.62);
+  box-shadow: inset 0 0 0 1px rgba(15, 159, 143, 0.18);
 }
 
 .toggle {
@@ -1232,9 +1235,10 @@ textarea {
   --desk: #fff5ee;
   --line: #eadfce;
   --white: #ffffff;
-  --accent: #004038;
-  --accent-deep: #012620;
-  --accent-soft: #00544c;
+  --accent: #0f9f8f;
+  --accent-deep: #065f57;
+  --accent-soft: #48c7b6;
+  --accent-wash: #e8fbf7;
   --sky-haze: #bee9f4;
   --spring: #7edcaf;
   --red: #d4472f;
@@ -1281,7 +1285,7 @@ textarea {
   height: 36px;
   border-radius: 12px;
   color: #ffffff;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-soft));
 }
 
 .topbar-note {
@@ -1336,23 +1340,25 @@ textarea {
 .toc-button,
 .export-button {
   min-height: 40px;
-  border: 1px solid var(--accent);
+  border: 1px solid rgba(6, 95, 87, 0.26);
   border-radius: 14px;
   padding: 0 18px;
   color: var(--accent-deep);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.72);
   box-shadow: none;
   font-weight: 800;
 }
 
 .primary-button,
 .upload-button {
-  color: #ffffff;
-  background: var(--accent);
+  border-color: rgba(15, 159, 143, 0.48);
+  color: #043b36;
+  background: linear-gradient(180deg, #d9fbf3, #a8efe3);
+  box-shadow: 0 7px 18px rgba(15, 159, 143, 0.18);
 }
 
 .secondary-button {
-  color: var(--accent);
+  color: var(--accent-deep);
   background: #ffffff;
 }
 
@@ -1426,13 +1432,24 @@ textarea {
   box-shadow: none;
   font-size: 14px;
   font-weight: 800;
+  position: relative;
+  overflow: hidden;
 }
 
 .theme-chip.active {
-  border-color: var(--accent);
+  border-color: rgba(15, 159, 143, 0.62);
   outline: 0;
-  color: #ffffff;
-  background: var(--accent);
+  color: var(--accent-deep);
+  background: linear-gradient(180deg, #ffffff, var(--accent-wash));
+  box-shadow: inset 0 0 0 1px rgba(15, 159, 143, 0.18), 0 8px 18px rgba(15, 159, 143, 0.14);
+}
+
+.theme-chip.active::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
 }
 
 .palette-row {
