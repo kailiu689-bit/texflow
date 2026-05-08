@@ -62,6 +62,49 @@ Recommended page structure:
 
 Avoid hidden feature panels that are not part of WeChat formatting.
 
+## 5.1 UI/UX Pro Max Method
+
+Use the UI UX Pro Max method as a design operating system:
+
+1. Classify the product.
+2. Select a pattern and style family.
+3. Define color, typography, spacing, and component rules.
+4. Filter out anti-patterns for the product category.
+5. Implement the UI.
+6. Run a pre-delivery checklist before release.
+
+For TeXflow, the product classification is:
+
+- Product type: editorial productivity tool.
+- Domain: public-service / government communication.
+- Interface pattern: data-dense workstation, not landing page.
+- Primary style family: Accessible & Ethical.
+- Secondary style family: Minimalism & Swiss Style.
+- Supporting style family: Soft UI Evolution, used only for light warmth and comfort.
+
+Do not choose flashy styles such as glassmorphism, cyberpunk, vaporwave, Gen Z chaos, parallax storytelling, or AI-native purple gradients for the application shell.
+
+## 5.2 Recommended Pattern
+
+Recommended pattern: task-first workstation.
+
+Sections:
+
+1. Compact top bar.
+2. Action toolbar.
+3. Design-system controls.
+4. Source editor.
+5. Editable WeChat preview.
+6. Copy/export/status feedback.
+
+The main call to action is not a marketing CTA. It is the operational action:
+
+- Primary action: "复制到公众号".
+- Secondary action: "导出 DOCX".
+- Utility actions: upload, insert textbox, one-click format, focus preview.
+
+The UI should reduce time-to-first-layout. A returning user should be able to paste text and copy a formatted result without reading instructions.
+
 ## 6. Theme Set
 
 Keep exactly six themes:
@@ -302,6 +345,49 @@ App shell rules:
 - Keep cards lightweight; do not nest card inside card inside card.
 - Use color to clarify state: active, warning, success, disabled.
 
+## 11.3 Motion And Interaction
+
+Use restrained micro-interactions only where they clarify action.
+
+Rules:
+
+- Hover transitions: `150ms` to `220ms`.
+- Focus transitions: immediate or under `150ms`.
+- Loading feedback: subtle, non-blocking, and textual.
+- Respect `prefers-reduced-motion`.
+- Do not use decorative page-load animations.
+- Do not animate the article preview content when the user is editing.
+- Clickable elements must clearly look clickable and use `cursor: pointer`.
+
+Allowed motion:
+
+- Button hover lift of `1px`.
+- Active theme chip state change.
+- Status message fade or color shift.
+- Lightweight loading indicator during parsing/formatting.
+
+Disallowed motion:
+
+- Parallax.
+- Animated gradient hero backgrounds.
+- Constantly moving decorative effects.
+- Any motion that shifts the editor layout while typing.
+
+## 11.4 Anti-Pattern Filter
+
+Before adding or changing UI, reject anything that matches these anti-patterns:
+
+- A visual element exists only to show off styling.
+- A feature is visible but not truly supported.
+- A panel requires explanation before a first-time user can act.
+- A layout makes the preview smaller than the controls.
+- A theme changes only the background color.
+- A copy-critical style depends on pseudo-elements.
+- A button label is ambiguous, such as "生成" without saying what is generated.
+- A state is represented by color only.
+- A hover/focus state moves nearby content.
+- A component looks like an input but is not editable.
+
 ## 12. Layout Rules
 
 Desktop:
@@ -358,6 +444,44 @@ The preview is editable and is the source of truth for copy/export once edited.
 
 Visible focus state is required, but it should not look like an accidental cursor or broken overlay.
 
+### Control States
+
+Every interactive component must define these states:
+
+- Default.
+- Hover.
+- Focus-visible.
+- Active/selected.
+- Disabled.
+- Loading when the action can take more than one second.
+- Error when the action fails.
+
+Do not ship controls that only define the default state.
+
+### Empty States
+
+Empty states should be operational, not promotional.
+
+Examples:
+
+- Source editor empty: "把需要整理的文字粘贴到这里..."
+- Preview empty: "排版后的内容会出现在这里。"
+- No TOC headings: "暂无目录"
+- No extracted images: no separate panel; simply omit image gallery.
+
+Empty states must not introduce features outside the MVP.
+
+### Loading States
+
+Loading states are required for:
+
+- Attachment parsing.
+- One-click formatting.
+- Word export.
+- Copying articles that contain images.
+
+Each loading state should name the task in plain Chinese and avoid technical terms unless the user needs to fix something.
+
 ## 14. Accessibility
 
 Minimum expectations:
@@ -368,6 +492,30 @@ Minimum expectations:
 - Controls work with keyboard navigation.
 - Status messages use `aria-live`.
 - No text overlaps controls on narrow screens.
+- Light-mode body text contrast must meet at least `4.5:1`.
+- The interface must remain usable at 375px, 768px, 1024px, and 1440px widths.
+- Controls must not require hover to reveal critical actions.
+- Disabled controls need text or status explaining why when the reason is not obvious.
+- Touch targets should be at least `40px` high in the app shell.
+
+## 14.1 Responsive QA Breakpoints
+
+Check these viewport widths before release:
+
+| Width | Expected behavior |
+| --- | --- |
+| 375px | Controls stack; no button text overflows; preview remains readable. |
+| 768px | Controls may wrap; input and preview stack if needed. |
+| 1024px | Two-column workspace can appear; controls remain compact. |
+| 1440px | Full workstation layout; preview has enough width; no excessive empty marketing space. |
+
+At every width:
+
+- The toolbar must remain usable.
+- Theme chips must not overlap.
+- Select labels must not collide with values.
+- Text inside buttons must fit.
+- The preview must not be hidden below excessive controls.
 
 ## 15. Error And Status Messages
 
@@ -419,6 +567,35 @@ A release is acceptable when:
 - Edited preview content is used for copy and DOCX export.
 - Articles with images either copy successfully or show a clear segmented-copy warning.
 - DOCX export works and aims to stay below 15 MB.
+
+## 17.1 Pre-Delivery Checklist
+
+Before deploying or uploading files, check:
+
+- [ ] No unsupported sync/account feature is visible.
+- [ ] No dead tabs or hidden old product modes remain in the UI.
+- [ ] All clickable controls have pointer cursor and visible hover/focus states.
+- [ ] Keyboard focus is visible on buttons, selects, textareas, and preview.
+- [ ] Light-mode text contrast is acceptable.
+- [ ] The interface works at 375px, 768px, 1024px, and 1440px.
+- [ ] Motion is minimal and respects reduced-motion preferences.
+- [ ] Textboxes render in preview and copy as visible boxes.
+- [ ] Edited preview content is used by copy and export.
+- [ ] Copying image-heavy articles gives a useful warning instead of silently failing.
+- [ ] DOCX export produces a usable file.
+- [ ] GitHub Pages can serve the static files without a build step.
+
+## 17.2 Design System Source Of Truth
+
+`DESIGN.md` is the source of truth for the current static MVP.
+
+When implementing a specific area, create or follow a page-level override only if needed:
+
+- `DESIGN.md`: global product, visual, accessibility, and component rules.
+- Future optional `docs/pages/workbench.md`: workstation-specific overrides.
+- Future optional `docs/pages/export.md`: export/copy-specific interaction rules.
+
+If an override conflicts with `DESIGN.md`, the override must explain why. Otherwise, follow `DESIGN.md`.
 
 ## 18. Design Principle
 

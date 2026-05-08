@@ -9,21 +9,12 @@ const loadDemo = document.querySelector("#loadDemo");
 const highlightToggle = document.querySelector("#highlightToggle");
 const fileInput = document.querySelector("#fileInput");
 const fileStatus = document.querySelector("#fileStatus");
-const styleButtons = document.querySelectorAll("[data-style]");
-const modeButtons = document.querySelectorAll("[data-mode]");
-const resultTabs = document.querySelectorAll("[data-panel]");
-const resultPanels = document.querySelectorAll("[data-panel-content]");
-const inputPane = document.querySelector("#inputPane");
 const resultPane = document.querySelector("#resultPane");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const exportButton = document.querySelector("#exportButton");
 const tocButton = document.querySelector("#tocButton");
 const tocPopover = document.querySelector("#tocPopover");
 const taskMask = document.querySelector("#taskMask");
-const visualPanel = document.querySelector("#visualPanel");
-const magazinePanel = document.querySelector("#magazinePanel");
-const cardPanel = document.querySelector("#cardPanel");
-const platformTabs = document.querySelectorAll("[data-platform]");
 const themeChips = document.querySelectorAll("[data-theme]");
 const paletteDots = document.querySelectorAll("[data-palette]");
 const fontFamilySelect = document.querySelector("#fontFamilySelect");
@@ -50,7 +41,6 @@ const demoText = `项目复盘：为什么排版影响转化
 let activeStyle = "wechat";
 let formattedBlocks = [];
 let pdfLibraryPromise;
-let activePanel = "formatted";
 let extractedAssets = [];
 let importedBlocks = null;
 let activeTheme = "long";
@@ -232,16 +222,13 @@ function renderPreview(blocks) {
   previewDirty = false;
   headingIndex = 0;
   calloutIndex = 0;
-  preview.className = `preview result-panel ${activeStyle} theme-${activeTheme} platform-${activePlatform} heading-${headingStyleSelect.value} box-${boxStyleSelect.value} body-${bodyStyleSelect.value} image-${imageStyleSelect.value} divider-${dividerStyleSelect.value} ${
-    activePanel === "formatted" ? "active" : ""
-  }`;
+  preview.className = `preview result-panel active ${activeStyle} theme-${activeTheme} platform-${activePlatform} heading-${headingStyleSelect.value} box-${boxStyleSelect.value} body-${bodyStyleSelect.value} image-${imageStyleSelect.value} divider-${dividerStyleSelect.value}`;
 
   if (!blocks.length) {
     preview.classList.add("empty");
     preview.innerHTML = extractedAssets.length
       ? renderAssetGallery()
       : "<p>排版后的内容会出现在这里。</p>";
-    renderGeneratedPanels(blocks);
     renderToc(blocks);
     return;
   }
@@ -249,7 +236,6 @@ function renderPreview(blocks) {
   preview.classList.remove("empty");
   preview.innerHTML = renderMixedContent(blocks);
 
-  renderGeneratedPanels(blocks);
   renderToc(blocks);
 }
 
@@ -383,53 +369,6 @@ function renderAssetGallery() {
         .join("")}
     </section>
   `;
-}
-
-function getPlainParagraphs(blocks) {
-  return blocks.filter((block) => block.type === "paragraph").map((block) => block.text);
-}
-
-function renderGeneratedPanels(blocks) {
-  const headings = blocks.filter((block) => block.type === "heading").map((block) => block.text);
-  const paragraphs = getPlainParagraphs(blocks);
-  const topParagraphs = paragraphs.slice(0, 4);
-
-  visualPanel.innerHTML = blocks.length
-    ? topParagraphs
-        .map(
-          (text, index) => `
-            <section class="timeline-item">
-              <span>${String(index + 1).padStart(2, "0")}</span>
-              <p>${escapeHtml(text)}</p>
-            </section>
-          `,
-        )
-        .join("")
-    : "<p class=\"muted-empty\">生成后会显示结构化流程图。</p>";
-
-  magazinePanel.innerHTML = blocks.length
-    ? `
-      <p class="magazine-kicker">TEXFLOW REPORT</p>
-      <h2>${escapeHtml(headings[0] || "智能排版稿")}</h2>
-      ${extractedAssets[0] ? `<img src="${extractedAssets[0].src}" alt="${escapeHtml(extractedAssets[0].alt)}" />` : ""}
-      ${topParagraphs.map((text) => `<p>${escapeHtml(text)}</p>`).join("")}
-    `
-    : `${renderAssetGallery() || "<p class=\"muted-empty\">生成后会显示杂志式阅读版。</p>"}`;
-
-  cardPanel.innerHTML = blocks.length
-    ? `
-      <span>知识卡片</span>
-      <h2>${escapeHtml(headings[0] || "核心结论")}</h2>
-      ${extractedAssets[0] ? `<img src="${extractedAssets[0].src}" alt="${escapeHtml(extractedAssets[0].alt)}" />` : ""}
-      <p>${escapeHtml(paragraphs.find(shouldHighlight) || paragraphs[0] || "暂无可提取的重点。")}</p>
-      <button type="button" id="mockGenerateCard">立即生成</button>
-    `
-    : `
-      <span>知识卡片</span>
-      <h2>等待内容</h2>
-      <p>上传或粘贴文本后，可以把重点整理成卡片。</p>
-      <button type="button" id="mockGenerateCard">立即生成</button>
-    `;
 }
 
 function renderToc(blocks) {
@@ -1253,15 +1192,6 @@ loadDemo.addEventListener("click", () => {
   document.querySelector("#editor").scrollIntoView({ behavior: "smooth" });
 });
 
-modeButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    modeButtons.forEach((item) => item.classList.remove("active"));
-    button.classList.add("active");
-    inputPane.hidden = button.dataset.mode === "reading";
-    document.querySelector(".workspace-grid").classList.toggle("reading-layout", button.dataset.mode === "reading");
-  });
-});
-
 function applyDesignSettings() {
   const fontSize = fontSizeSelect.value;
   const lineHeight = lineHeightSelect.value;
@@ -1292,16 +1222,6 @@ function applyThemePreset(themeName) {
   applyDesignSettings();
 }
 
-platformTabs.forEach((button) => {
-  button.addEventListener("click", () => {
-    platformTabs.forEach((item) => item.classList.toggle("active", item === button));
-    activePlatform = button.dataset.platform;
-    if (activePlatform === "wechat") activeStyle = "wechat";
-    if (activePlatform === "redbook") activeStyle = "clean";
-    renderPreview(formattedBlocks);
-  });
-});
-
 themeChips.forEach((button) => {
   button.addEventListener("click", () => {
     themeChips.forEach((item) => item.classList.toggle("active", item === button));
@@ -1320,14 +1240,6 @@ paletteDots.forEach((button) => {
 
 [fontFamilySelect, fontSizeSelect, lineHeightSelect, headingStyleSelect, boxStyleSelect, bodyStyleSelect, imageStyleSelect, dividerStyleSelect].forEach((control) => {
   control.addEventListener("change", applyDesignSettings);
-});
-
-resultTabs.forEach((button) => {
-  button.addEventListener("click", () => {
-    activePanel = button.dataset.panel;
-    resultTabs.forEach((item) => item.classList.toggle("active", item === button));
-    resultPanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.panelContent === activePanel));
-  });
 });
 
 tocButton.addEventListener("click", () => {
@@ -1404,15 +1316,6 @@ fileInput.addEventListener("change", async () => {
 });
 
 copyButton.addEventListener("click", copyOutput);
-
-styleButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    styleButtons.forEach((item) => item.classList.remove("active"));
-    button.classList.add("active");
-    activeStyle = button.dataset.style;
-    renderPreview(formattedBlocks);
-  });
-});
 
 refresh();
 applyDesignSettings();

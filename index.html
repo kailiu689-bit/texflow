@@ -16,38 +16,6 @@
     </header>
 
     <main>
-      <section class="hero" id="workspace">
-        <div class="hero-copy">
-          <p class="eyebrow">AI TEXT TYPESSETTING</p>
-          <h1>把凌乱文字，整理成能直接发布的专业排版。</h1>
-          <p class="hero-lede">
-            粘贴文章或公众号草稿，TeXflow 会自动分段、识别标题、突出重点，
-            并生成清爽的发布稿。
-          </p>
-          <div class="hero-actions">
-            <a class="primary-button" href="#editor">开始排版</a>
-            <button class="secondary-button" type="button" id="loadDemo">载入示例</button>
-          </div>
-        </div>
-
-        <div class="proof-panel" aria-label="排版效果预览">
-          <div class="proof-toolbar">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <article>
-            <p class="mini-title">优化前</p>
-            <p>研究记录内容散乱。标题不明显。重点藏在段落中。</p>
-            <p class="mini-title accent">优化后</p>
-            <h2>研究记录：从素材到结构</h2>
-            <p>
-              <strong>系统会先识别段落逻辑</strong>，再把关键结论放到读者最容易扫到的位置。
-            </p>
-          </article>
-        </div>
-      </section>
-
       <section class="editor-shell" id="editor" aria-label="智能排版编辑器">
         <div class="editor-heading">
           <div>
@@ -70,6 +38,7 @@
           />
           <button class="ghost-button compact" type="button" id="insertBoxButton">插入文本框</button>
           <button class="secondary-button compact" type="button" id="formatButton">一键排版</button>
+          <button class="ghost-button compact" type="button" id="loadDemo">示例文本</button>
           <button class="primary-button compact" type="button" id="copyButton">复制到公众号</button>
           <button class="ghost-button compact" type="button" id="fullscreenButton">专注预览</button>
         </div>
@@ -201,18 +170,9 @@
               <button class="export-button" type="button" id="exportButton">导出 DOCX</button>
             </div>
             <div class="toc-popover" id="tocPopover" aria-label="目录"></div>
-            <article id="preview" class="preview empty result-panel active" data-panel-content="formatted" contenteditable="true" spellcheck="false">
+            <article id="preview" class="preview empty result-panel active" contenteditable="true" spellcheck="false">
               <p>排版后的内容会出现在这里。</p>
             </article>
-            <div class="result-panel visual-panel" data-panel-content="visual">
-              <div class="timeline-board" id="visualPanel"></div>
-            </div>
-            <div class="result-panel magazine-panel" data-panel-content="magazine">
-              <article class="magazine-page" id="magazinePanel"></article>
-            </div>
-            <div class="result-panel card-panel" data-panel-content="card">
-              <div class="knowledge-card" id="cardPanel"></div>
-            </div>
             <div class="task-mask" id="taskMask" hidden>
               <div class="typing-loader" aria-hidden="true">
                 <span></span>
@@ -224,35 +184,6 @@
             </div>
           </section>
         </div>
-      </section>
-
-      <section class="feature-band" id="features">
-        <div class="feature">
-          <span>01</span>
-          <h3>自动拆段</h3>
-          <p>把长文本拆成更适合阅读的短段，减少手动换行。</p>
-        </div>
-        <div class="feature">
-          <span>02</span>
-          <h3>标题识别</h3>
-          <p>识别序号、冒号和短句标题，自动建立清晰层级。</p>
-        </div>
-        <div class="feature">
-          <span>03</span>
-          <h3>重点标注</h3>
-          <p>将结论、建议、风险等高价值句子加粗呈现。</p>
-        </div>
-      </section>
-
-      <section class="pricing" id="pricing">
-        <div>
-          <p class="eyebrow">SIMPLE START</p>
-          <h2>先把核心体验跑起来。</h2>
-        </div>
-        <p>
-          当前版本在浏览器本地完成排版，适合验证产品方向。后续可以接入登录、模板库、
-          云端草稿和真正的 AI 语义优化。
-        </p>
       </section>
     </main>
 
