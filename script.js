@@ -837,6 +837,45 @@ async function fallbackCopyHtml(html, text) {
   }
 }
 
+async function copyEditedPreviewSelection(text) {
+  const clone = preview.cloneNode(true);
+  clone.removeAttribute("id");
+  clone.removeAttribute("contenteditable");
+  clone.style.position = "fixed";
+  clone.style.left = "-9999px";
+  clone.style.top = "0";
+  clone.style.width = `${Math.max(360, preview.clientWidth)}px`;
+  clone.style.maxHeight = "none";
+  clone.style.overflow = "visible";
+  clone.style.background = "#ffffff";
+  clone.style.pointerEvents = "none";
+  document.body.appendChild(clone);
+
+  const selection = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(clone);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+
+  const copied = document.execCommand("copy");
+  selection?.removeAllRanges();
+  clone.remove();
+
+  if (!copied) {
+    const fallbackOutput = await buildEditedPreviewHtmlOutput();
+    await fallbackCopyHtml(fallbackOutput.html, text);
+    return fallbackOutput.metrics;
+  }
+
+  return {
+    imageCount: preview.querySelectorAll("img").length,
+    totalImageBytes: Array.from(preview.querySelectorAll("img"))
+      .map((image) => (image.src?.startsWith("data:image/") ? dataUrlSize(image.src) : 0))
+      .reduce((sum, bytes) => sum + bytes, 0),
+    fallbackImages: 0,
+  };
+}
+
 function inlineComputedStyles(root) {
   const properties = [
     "display",
@@ -1002,6 +1041,16 @@ async function copyOutput() {
     const hasImages = formattedBlocks.some((block) => block.type === "image") || extractedAssets.length > 0;
     if (hasImages) {
       setFileStatus("正在压缩图片并生成公众号富文本，请稍等...");
+    }
+    if (previewDirty) {
+      copyOutput.lastMetrics = await copyEditedPreviewSelection(text);
+      copyButton.textContent = "已复制";
+      const risk = getCopyRisk(copyOutput.lastMetrics || { imageCount: 0, totalImageBytes: 0 });
+      setFileStatus(risk.message || "已按当前预览格式复制，可直接粘贴到公众号后台。");
+      window.setTimeout(() => {
+        copyButton.textContent = "复制到公众号";
+      }, 1400);
+      return;
     }
     const richOutput = await buildRichHtmlOutput();
     if (window.ClipboardItem && navigator.clipboard?.write) {

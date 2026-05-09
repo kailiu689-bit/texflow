@@ -2065,6 +2065,10 @@ body {
   font-style: italic;
 }
 
+.format-button.underline {
+  text-decoration: underline;
+}
+
 .format-button.strike {
   text-decoration: line-through;
 }
