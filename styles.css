@@ -2025,6 +2025,71 @@ body {
   gap: 6px;
 }
 
+.format-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 42px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--panel-line);
+  background: #fffdf8;
+}
+
+.format-button,
+.format-picker select {
+  min-height: 28px;
+  border: 1px solid var(--control-line);
+  border-radius: 7px;
+  color: var(--editor-ink);
+  background: #ffffff;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.format-button {
+  min-width: 30px;
+  padding: 0 9px;
+  cursor: pointer;
+}
+
+.format-button:hover,
+.format-picker select:hover {
+  background: var(--control-hover);
+}
+
+.format-button.italic {
+  font-style: italic;
+}
+
+.format-button.strike {
+  text-decoration: line-through;
+}
+
+.format-button.clear {
+  color: var(--editor-muted);
+}
+
+.format-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--editor-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.format-picker select {
+  padding: 0 8px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--panel-line);
+}
+
 .toc-button,
 .export-button {
   min-height: 30px;
@@ -2088,5 +2153,9 @@ textarea {
 
   .export-actions .export-button {
     flex: 1;
+  }
+
+  .format-toolbar {
+    align-items: stretch;
   }
 }

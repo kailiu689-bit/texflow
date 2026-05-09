@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TeXflow 快排版</title>
-    <link rel="stylesheet" href="./styles.css?v=20260509-flow1" />
+    <link rel="stylesheet" href="./styles.css?v=20260509-edit1" />
   </head>
   <body>
     <header class="topbar">
@@ -200,6 +200,37 @@
                     <button class="export-button" type="button" id="exportButton">导出 DOCX</button>
                   </div>
                 </div>
+                <div class="format-toolbar" aria-label="预览编辑工具">
+                  <button class="format-button" type="button" data-command="bold" title="加粗">B</button>
+                  <button class="format-button italic" type="button" data-command="italic" title="斜体">I</button>
+                  <button class="format-button strike" type="button" data-command="strikeThrough" title="删除线">S</button>
+                  <label class="format-picker" title="文字颜色">
+                    <span>文字</span>
+                    <select id="textColorSelect" aria-label="文字颜色">
+                      <option value="">颜色</option>
+                      <option value="#1f2328">黑色</option>
+                      <option value="#2f69ff">政务蓝</option>
+                      <option value="#004038">墨绿</option>
+                      <option value="#d4472f">红色</option>
+                      <option value="#73716c">灰色</option>
+                    </select>
+                  </label>
+                  <label class="format-picker" title="背景高亮">
+                    <span>高亮</span>
+                    <select id="highlightColorSelect" aria-label="背景高亮">
+                      <option value="">高亮</option>
+                      <option value="#fff1a8">浅黄</option>
+                      <option value="#dce9ff">浅蓝</option>
+                      <option value="#e7f7ef">浅绿</option>
+                      <option value="#ffe1dc">浅红</option>
+                    </select>
+                  </label>
+                  <span class="toolbar-divider" aria-hidden="true"></span>
+                  <button class="format-button" type="button" data-command="justifyLeft" title="左对齐">左</button>
+                  <button class="format-button" type="button" data-command="justifyCenter" title="居中">中</button>
+                  <button class="format-button" type="button" data-command="justifyRight" title="右对齐">右</button>
+                  <button class="format-button clear" type="button" data-command="removeFormat" title="清除格式">清除</button>
+                </div>
                 <div class="toc-popover" id="tocPopover" aria-label="目录"></div>
                 <article id="preview" class="preview empty result-panel active" contenteditable="true" spellcheck="false">
                   <p>排版后的内容会出现在这里。</p>
@@ -222,6 +253,6 @@
 
     <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
-    <script src="./script.js?v=20260509-flow1" type="module"></script>
+    <script src="./script.js?v=20260509-edit1" type="module"></script>
   </body>
 </html>

@@ -15,6 +15,9 @@ const resultPane = document.querySelector("#resultPane");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const exportButton = document.querySelector("#exportButton");
 const exportMdButton = document.querySelector("#exportMdButton");
+const formatToolbar = document.querySelector(".format-toolbar");
+const textColorSelect = document.querySelector("#textColorSelect");
+const highlightColorSelect = document.querySelector("#highlightColorSelect");
 const tocButton = document.querySelector("#tocButton");
 const tocPopover = document.querySelector("#tocPopover");
 const taskMask = document.querySelector("#taskMask");
@@ -402,6 +405,22 @@ function refresh() {
 function setFileStatus(message, isError = false) {
   fileStatus.textContent = message;
   fileStatus.classList.toggle("error", isError);
+}
+
+function markPreviewEdited(message = "已应用编辑格式。") {
+  previewDirty = true;
+  previewState.textContent = "已编辑";
+  setFileStatus(message);
+}
+
+function focusPreviewForCommand() {
+  preview.focus({ preventScroll: true });
+}
+
+function runFormatCommand(command, value = null) {
+  focusPreviewForCommand();
+  document.execCommand(command, false, value);
+  markPreviewEdited();
 }
 
 function buildMarkdownOutput(headingPrefix = "##") {
@@ -1183,9 +1202,7 @@ sourceText.addEventListener("input", () => {
   refresh();
 });
 preview.addEventListener("input", () => {
-  previewDirty = true;
-  previewState.textContent = "已编辑";
-  setFileStatus("已进入右侧编辑模式，复制时会使用你修改后的内容。");
+  markPreviewEdited("已进入右侧编辑模式，复制时会使用你修改后的内容。");
 });
 highlightToggle.addEventListener("change", () => renderPreview(formattedBlocks));
 insertBoxButton.addEventListener("click", () => {
@@ -1308,6 +1325,25 @@ exportMdButton.addEventListener("click", () => {
   } catch (error) {
     setFileStatus(error.message || "Markdown 导出失败，请稍后再试。", true);
   }
+});
+
+formatToolbar.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-command]");
+  if (!button) return;
+
+  runFormatCommand(button.dataset.command);
+});
+
+textColorSelect.addEventListener("change", () => {
+  if (!textColorSelect.value) return;
+  runFormatCommand("foreColor", textColorSelect.value);
+  textColorSelect.value = "";
+});
+
+highlightColorSelect.addEventListener("change", () => {
+  if (!highlightColorSelect.value) return;
+  runFormatCommand("backColor", highlightColorSelect.value);
+  highlightColorSelect.value = "";
 });
 
 fileInput.addEventListener("change", async () => {
