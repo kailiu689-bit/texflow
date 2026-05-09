@@ -600,18 +600,7 @@ function getCopyStyles() {
 
 async function buildRichHtmlOutput() {
   if (previewDirty) {
-    const clone = preview.cloneNode(true);
-    inlineComputedStyles(clone);
-    return {
-      html: sanitizeWechatHtml(clone.innerHTML),
-      metrics: {
-        imageCount: preview.querySelectorAll("img").length,
-        totalImageBytes: Array.from(preview.querySelectorAll("img"))
-          .map((image) => (image.src?.startsWith("data:image/") ? dataUrlSize(image.src) : 0))
-          .reduce((sum, bytes) => sum + bytes, 0),
-        fallbackImages: 0,
-      },
-    };
+    return buildEditedPreviewHtmlOutput();
   }
 
   const { fontSize, lineHeight, fontFamily, headingColor, bodyColor, heading, box, paragraph, image } = getCopyStyles();
@@ -732,6 +721,37 @@ async function buildRichHtmlOutput() {
   };
 }
 
+async function buildEditedPreviewHtmlOutput() {
+  const clone = preview.cloneNode(true);
+  clone.removeAttribute("contenteditable");
+  inlineComputedStyles(clone);
+
+  const metrics = {
+    imageCount: 0,
+    totalImageBytes: 0,
+    fallbackImages: 0,
+  };
+
+  const images = Array.from(clone.querySelectorAll("img"));
+  for (const image of images) {
+    if (!image.src) continue;
+    try {
+      const compressed = await compressImageForWechat({ src: image.src });
+      image.src = compressed.src;
+      image.setAttribute("style", `${image.getAttribute("style") || ""};display:block;max-width:100%;height:auto;`);
+      metrics.imageCount += 1;
+      metrics.totalImageBytes += compressed.bytes || 0;
+    } catch (error) {
+      metrics.fallbackImages += 1;
+    }
+  }
+
+  return {
+    html: sanitizeWechatHtml(clone.innerHTML),
+    metrics,
+  };
+}
+
 function sanitizeWechatHtml(html) {
   const holder = document.createElement("div");
   holder.innerHTML = html;
@@ -826,6 +846,7 @@ function inlineComputedStyles(root) {
     "line-height",
     "color",
     "background-color",
+    "background",
     "text-align",
     "margin",
     "padding",
@@ -839,6 +860,7 @@ function inlineComputedStyles(root) {
     "max-width",
     "height",
     "text-decoration",
+    "font-style",
   ];
 
   root.querySelectorAll("*").forEach((element) => {

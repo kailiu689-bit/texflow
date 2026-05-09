@@ -1968,10 +1968,12 @@ body {
 }
 
 .pane {
-  min-height: calc(100vh - 150px);
+  height: calc(100vh - 150px);
+  min-height: 560px;
   border: 1px solid var(--panel-line);
   border-radius: 14px;
   background: var(--surface-strong);
+  overflow: hidden;
 }
 
 .pane-title,
@@ -2101,10 +2103,14 @@ textarea {
   padding: 18px;
   font-size: 15px;
   line-height: 1.8;
+  min-height: 0;
+  overflow: auto;
 }
 
 .preview {
   padding: 26px clamp(18px, 3vw, 42px);
+  min-height: 0;
+  overflow: auto;
 }
 
 @media (max-width: 1180px) {
@@ -2141,6 +2147,11 @@ textarea {
 
   .workspace-grid {
     display: grid;
+  }
+
+  .pane {
+    height: auto;
+    min-height: 520px;
   }
 
   .result-header {
