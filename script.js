@@ -2,6 +2,8 @@ const sourceText = document.querySelector("#sourceText");
 const preview = document.querySelector("#preview");
 const charCount = document.querySelector("#charCount");
 const paragraphCount = document.querySelector("#paragraphCount");
+const inputState = document.querySelector("#inputState");
+const previewState = document.querySelector("#previewState");
 const formatButton = document.querySelector("#formatButton");
 const insertBoxButton = document.querySelector("#insertBoxButton");
 const copyButton = document.querySelector("#copyButton");
@@ -387,12 +389,14 @@ function updateStats() {
   const paragraphs = text ? text.split(/\n+/).filter(Boolean).length : 0;
   charCount.textContent = `${text.length} 字`;
   paragraphCount.textContent = `${paragraphs} 段`;
+  inputState.textContent = text || importedBlocks ? "已输入" : "待输入";
 }
 
 function refresh() {
   updateStats();
   formattedBlocks = importedBlocks || formatText(sourceText.value);
   renderPreview(formattedBlocks);
+  previewState.textContent = formattedBlocks.length || extractedAssets.length ? "已排版" : "待排版";
 }
 
 function setFileStatus(message, isError = false) {
@@ -1180,6 +1184,7 @@ sourceText.addEventListener("input", () => {
 });
 preview.addEventListener("input", () => {
   previewDirty = true;
+  previewState.textContent = "已编辑";
   setFileStatus("已进入右侧编辑模式，复制时会使用你修改后的内容。");
 });
 highlightToggle.addEventListener("change", () => renderPreview(formattedBlocks));

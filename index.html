@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TeXflow 快排版</title>
-    <link rel="stylesheet" href="./styles.css?v=20260508-rico1" />
+    <link rel="stylesheet" href="./styles.css?v=20260509-flow1" />
   </head>
   <body>
     <header class="topbar">
@@ -25,22 +25,26 @@
         </div>
 
         <div class="tool-row" role="toolbar" aria-label="排版工具">
-          <label class="toggle">
-            <input type="checkbox" id="highlightToggle" checked />
-            <span>突出重点</span>
-          </label>
-          <label class="upload-button" for="fileInput">上传附件</label>
-          <input
-            id="fileInput"
-            class="file-input"
-            type="file"
-            accept=".txt,.md,.markdown,.tex,.csv,.pdf,.doc,.docx,.wps,.png,.jpg,.jpeg,.webp,text/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
-          />
-          <button class="ghost-button compact" type="button" id="insertBoxButton">插入文本框</button>
-          <button class="secondary-button compact" type="button" id="formatButton">一键排版</button>
-          <button class="ghost-button compact" type="button" id="loadDemo">示例文本</button>
-          <button class="primary-button compact" type="button" id="copyButton">复制到公众号</button>
-          <button class="ghost-button compact" type="button" id="fullscreenButton">专注预览</button>
+          <div class="primary-flow" aria-label="主要流程">
+            <label class="upload-button" for="fileInput">上传附件</label>
+            <input
+              id="fileInput"
+              class="file-input"
+              type="file"
+              accept=".txt,.md,.markdown,.tex,.csv,.pdf,.doc,.docx,.wps,.png,.jpg,.jpeg,.webp,text/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+            />
+            <button class="secondary-button compact" type="button" id="formatButton">一键排版</button>
+            <button class="primary-button compact" type="button" id="copyButton">复制到公众号</button>
+          </div>
+          <div class="secondary-flow" aria-label="辅助工具">
+            <label class="toggle">
+              <input type="checkbox" id="highlightToggle" checked />
+              <span>突出重点</span>
+            </label>
+            <button class="ghost-button compact" type="button" id="insertBoxButton">插入文本框</button>
+            <button class="ghost-button compact" type="button" id="loadDemo">示例文本</button>
+            <button class="ghost-button compact" type="button" id="fullscreenButton">专注预览</button>
+          </div>
         </div>
 
         <div class="workbench-layout">
@@ -51,10 +55,12 @@
             </div>
 
             <section class="design-panel" aria-label="排版样式设置">
-              <div class="theme-card">
-                <div class="theme-card-header">
-                  <div class="theme-section active">公众号主题</div>
-                </div>
+              <details class="settings-group" open>
+                <summary>主题</summary>
+                <div class="theme-card">
+                  <div class="theme-card-header">
+                    <div class="theme-section active">公众号主题</div>
+                  </div>
                 <div class="theme-grid" aria-label="推荐主题">
                   <button class="theme-chip active" type="button" data-theme="long">长方矩</button>
                   <button class="theme-chip" type="button" data-theme="gov">政务</button>
@@ -71,6 +77,12 @@
                   <button class="palette-dot" type="button" data-palette="#ad4f43" style="--dot:#ad4f43"></button>
                   <button class="palette-dot" type="button" data-palette="#d4472f" style="--dot:#d4472f"></button>
                 </div>
+                </div>
+              </details>
+
+              <details class="settings-group">
+                <summary>模块样式</summary>
+                <div class="theme-card compact-card">
                 <div class="module-mixer" aria-label="混搭排版模块">
                   <label>
                     <span>标题</span>
@@ -124,9 +136,12 @@
                     </select>
                   </label>
                 </div>
-              </div>
+                </div>
+              </details>
 
-              <div class="type-controls">
+              <details class="settings-group">
+                <summary>字体设置</summary>
+                <div class="type-controls">
                 <label>
                   <span>字体</span>
                   <select id="fontFamilySelect">
@@ -153,7 +168,8 @@
                     <option value="2.3">宽松（2.3X）</option>
                   </select>
                 </label>
-              </div>
+                </div>
+              </details>
             </section>
 
             <div class="status-row">
@@ -168,14 +184,17 @@
           <div class="workspace-stack">
             <div class="workspace-grid">
               <label class="pane input-pane" id="inputPane">
-                <span class="pane-title">原文</span>
+                <span class="pane-title">
+                  <span>原文编辑</span>
+                  <small id="inputState">待输入</small>
+                </span>
                 <textarea id="sourceText" spellcheck="false" placeholder="把需要整理的文字粘贴到这里..."></textarea>
               </label>
 
               <section class="pane preview-pane" id="resultPane" aria-label="排版结果">
                 <div class="result-header">
                   <button class="toc-button" type="button" id="tocButton">目录</button>
-                  <strong>公众号预览 · 可编辑</strong>
+                  <strong>公众号预览 · 可编辑 <small id="previewState">待排版</small></strong>
                   <div class="export-actions">
                     <button class="export-button" type="button" id="exportMdButton">导出 MD</button>
                     <button class="export-button" type="button" id="exportButton">导出 DOCX</button>
@@ -203,6 +222,6 @@
 
     <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
-    <script src="./script.js?v=20260508-rico1" type="module"></script>
+    <script src="./script.js?v=20260509-flow1" type="module"></script>
   </body>
 </html>
