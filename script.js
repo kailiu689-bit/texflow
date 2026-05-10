@@ -932,15 +932,7 @@ function createCopySegments() {
   if (!nodes.length) return [];
 
   const metrics = analyzeCopyContent();
-  let targetCount = 1;
-  if (metrics.imageCount >= 7 || metrics.textLength >= 9000 || metrics.calloutCount >= 7) {
-    targetCount = 4;
-  } else if (metrics.imageCount >= 5 || metrics.textLength >= 6500 || metrics.calloutCount >= 5) {
-    targetCount = 3;
-  } else if (metrics.imageCount >= 4 || metrics.textLength >= 4500 || metrics.calloutCount >= 4) {
-    targetCount = 2;
-  }
-  targetCount = Math.min(4, Math.max(2, targetCount));
+  const targetCount = metrics.blockCount > 1 ? 2 : 1;
 
   const totalWeight = nodes.reduce((sum, node) => sum + getNodeCopyWeight(node).weight, 0);
   const targetWeight = Math.max(1, Math.ceil(totalWeight / targetCount));
@@ -965,7 +957,12 @@ function createCopySegments() {
   });
 
   if (current.length) segments.push(current);
-  return segments.slice(0, 4).map((segmentNodes, index) => {
+  if (segments.length > 2) {
+    const merged = [segments[0], segments.slice(1).flat()];
+    segments.splice(0, segments.length, ...merged);
+  }
+
+  return segments.slice(0, 2).map((segmentNodes, index) => {
     const textLength = segmentNodes.reduce((sum, node) => sum + (node.innerText?.trim().length || 0), 0);
     const imageCount = segmentNodes.reduce((sum, node) => sum + node.querySelectorAll("img").length, 0);
     const calloutCount = segmentNodes.reduce(
@@ -1060,7 +1057,7 @@ function openCopyPlanPanel(metrics, risk, segments) {
         <span>${metrics.textLength} 字</span>
         <span>${metrics.imageCount} 张图</span>
         <span>${metrics.calloutCount} 个文本框</span>
-        <span>${segments.length} 段建议</span>
+        <span>最多 ${segments.length} 次</span>
       </div>
       <div class="copy-plan-actions">
         <button type="button" data-copy-full>复制整篇</button>
