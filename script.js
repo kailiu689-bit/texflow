@@ -21,6 +21,10 @@ const highlightColorSelect = document.querySelector("#highlightColorSelect");
 const tocButton = document.querySelector("#tocButton");
 const tocPopover = document.querySelector("#tocPopover");
 const taskMask = document.querySelector("#taskMask");
+const draftList = document.querySelector("#draftList");
+const draftHint = document.querySelector("#draftHint");
+const saveDraftButton = document.querySelector("#saveDraftButton");
+const clearDraftsButton = document.querySelector("#clearDraftsButton");
 const themeChips = document.querySelectorAll("[data-theme]");
 const paletteDots = document.querySelectorAll("[data-palette]");
 const fontFamilySelect = document.querySelector("#fontFamilySelect");
@@ -55,6 +59,13 @@ let activePalette = "#004038";
 let headingIndex = 0;
 let calloutIndex = 0;
 let previewDirty = false;
+let draftSaveTimer = null;
+let isRestoringDraft = false;
+
+const DRAFTS_STORAGE_KEY = "texflow.drafts.v1";
+const AUTO_DRAFT_ID = "auto";
+const MAX_DRAFTS = 8;
+const MAX_PREVIEW_SNAPSHOT_CHARS = 950000;
 
 const fontFamilies = {
   serif: '"Songti SC", "Noto Serif CJK SC", serif',
@@ -78,6 +89,202 @@ const themePresets = {
   block: { heading: "bar", box: "media", body: "card", image: "stack", divider: "solid", palette: "#00544c" },
   contrast: { heading: "stamp", box: "court", body: "compact", image: "frame", divider: "ribbon", palette: "#151a1e" },
 };
+
+function readDrafts() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DRAFTS_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function persistDrafts(drafts) {
+  const compactDrafts = drafts.slice(0, MAX_DRAFTS);
+  try {
+    localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(compactDrafts));
+    return true;
+  } catch (error) {
+    try {
+      localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(compactDrafts.slice(0, Math.max(1, compactDrafts.length - 1))));
+      return true;
+    } catch (innerError) {
+      return false;
+    }
+  }
+}
+
+function getDraftSettings() {
+  return {
+    theme: activeTheme,
+    palette: activePalette,
+    fontFamily: fontFamilySelect.value,
+    fontSize: fontSizeSelect.value,
+    lineHeight: lineHeightSelect.value,
+    heading: headingStyleSelect.value,
+    box: boxStyleSelect.value,
+    body: bodyStyleSelect.value,
+    image: imageStyleSelect.value,
+    divider: dividerStyleSelect.value,
+    highlight: highlightToggle.checked,
+  };
+}
+
+function applyDraftSettings(settings = {}) {
+  activeTheme = settings.theme || activeTheme;
+  activePalette = settings.palette || activePalette;
+  fontFamilySelect.value = settings.fontFamily || fontFamilySelect.value;
+  fontSizeSelect.value = settings.fontSize || fontSizeSelect.value;
+  lineHeightSelect.value = settings.lineHeight || lineHeightSelect.value;
+  headingStyleSelect.value = settings.heading || headingStyleSelect.value;
+  boxStyleSelect.value = settings.box || boxStyleSelect.value;
+  bodyStyleSelect.value = settings.body || bodyStyleSelect.value;
+  imageStyleSelect.value = settings.image || imageStyleSelect.value;
+  dividerStyleSelect.value = settings.divider || dividerStyleSelect.value;
+  highlightToggle.checked = settings.highlight ?? highlightToggle.checked;
+
+  themeChips.forEach((item) => item.classList.toggle("active", item.dataset.theme === activeTheme));
+  paletteDots.forEach((item) => item.classList.toggle("active", item.dataset.palette === activePalette));
+}
+
+function getDraftTitle() {
+  const previewTitle = preview.querySelector("h2")?.innerText.trim();
+  const sourceTitle = sourceText.value
+    .split(/\n+/)
+    .map((line) => stripMarkdownMarkers(line.trim()))
+    .find(Boolean);
+  return (previewTitle || sourceTitle || "未命名草稿").slice(0, 28);
+}
+
+function getPreviewSnapshotHtml() {
+  if (!preview.innerText.trim() && preview.classList.contains("empty")) return "";
+  const html = preview.innerHTML;
+  return html.length <= MAX_PREVIEW_SNAPSHOT_CHARS ? html : "";
+}
+
+function buildDraft(id = `draft-${Date.now()}`, mode = "manual") {
+  const source = sourceText.value;
+  const previewHtml = getPreviewSnapshotHtml();
+  const textLength = (preview.innerText || source).trim().length;
+  return {
+    id,
+    mode,
+    title: mode === "auto" ? `自动保存 · ${getDraftTitle()}` : getDraftTitle(),
+    source,
+    previewHtml,
+    previewDirty,
+    settings: getDraftSettings(),
+    textLength,
+    paragraphCount: source ? source.split(/\n+/).filter(Boolean).length : 0,
+    updatedAt: Date.now(),
+    hasFullPreview: Boolean(previewHtml),
+  };
+}
+
+function shouldSaveDraft() {
+  return Boolean(sourceText.value.trim() || preview.innerText.trim().replace("排版后的内容会出现在这里。", ""));
+}
+
+function formatDraftTime(timestamp) {
+  const date = new Date(timestamp);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${month}-${day} ${hour}:${minute}`;
+}
+
+function saveDraft({ mode = "auto", silent = true } = {}) {
+  if (!shouldSaveDraft()) return false;
+
+  const drafts = readDrafts();
+  const draft = buildDraft(mode === "auto" ? AUTO_DRAFT_ID : `draft-${Date.now()}`, mode);
+  const nextDrafts =
+    mode === "auto"
+      ? [draft, ...drafts.filter((item) => item.id !== AUTO_DRAFT_ID)]
+      : [draft, ...drafts.filter((item) => item.id !== AUTO_DRAFT_ID)].concat(drafts.filter((item) => item.id === AUTO_DRAFT_ID));
+
+  const ok = persistDrafts(nextDrafts);
+  renderDraftList();
+  if (ok) {
+    draftHint.textContent = `${mode === "auto" ? "自动保存" : "已保存"} ${formatDraftTime(draft.updatedAt)}`;
+    if (!silent) setFileStatus(draft.hasFullPreview ? "草稿已保存到本机。" : "草稿已保存；图片较大时会优先保留文字和设置。");
+  } else if (!silent) {
+    setFileStatus("草稿保存失败，浏览器本地空间可能已满。", true);
+  }
+  return ok;
+}
+
+function scheduleDraftSave() {
+  if (isRestoringDraft) return;
+  window.clearTimeout(draftSaveTimer);
+  draftSaveTimer = window.setTimeout(() => saveDraft({ mode: "auto", silent: true }), 900);
+}
+
+function restoreDraft(draftId) {
+  const draft = readDrafts().find((item) => item.id === draftId);
+  if (!draft) return;
+
+  isRestoringDraft = true;
+  extractedAssets = [];
+  importedBlocks = null;
+  sourceText.value = draft.source || "";
+  applyDraftSettings(draft.settings);
+  updateStats();
+  formattedBlocks = formatText(sourceText.value);
+  applyDesignSettings();
+  previewState.textContent = formattedBlocks.length || draft.previewHtml ? "已排版" : "待排版";
+
+  if (draft.previewHtml) {
+    preview.classList.remove("empty");
+    preview.innerHTML = draft.previewHtml;
+    previewDirty = Boolean(draft.previewDirty);
+    previewState.textContent = previewDirty ? "已编辑" : "已排版";
+  }
+
+  renderToc(formattedBlocks);
+  setFileStatus(`已恢复草稿：${draft.title}`);
+  isRestoringDraft = false;
+  scheduleDraftSave();
+}
+
+function deleteDraft(draftId) {
+  const drafts = readDrafts().filter((item) => item.id !== draftId);
+  persistDrafts(drafts);
+  renderDraftList();
+  setFileStatus("已删除草稿。");
+}
+
+function clearDrafts() {
+  localStorage.removeItem(DRAFTS_STORAGE_KEY);
+  renderDraftList();
+  draftHint.textContent = "本机自动保存";
+  setFileStatus("历史草稿已清空。");
+}
+
+function renderDraftList() {
+  const drafts = readDrafts();
+  if (!drafts.length) {
+    draftList.innerHTML = '<p class="draft-empty">暂无草稿</p>';
+    clearDraftsButton.disabled = true;
+    return;
+  }
+
+  clearDraftsButton.disabled = false;
+  draftList.innerHTML = drafts
+    .map(
+      (draft) => `
+        <article class="draft-item">
+          <button class="draft-restore" type="button" data-restore-draft="${draft.id}">
+            <strong>${escapeHtml(draft.title)}</strong>
+            <span>${formatDraftTime(draft.updatedAt)} · ${draft.textLength || 0} 字${draft.hasFullPreview ? "" : " · 轻量"}</span>
+          </button>
+          <button class="draft-delete" type="button" data-delete-draft="${draft.id}" aria-label="删除 ${escapeHtml(draft.title)}">删</button>
+        </article>
+      `,
+    )
+    .join("");
+}
 
 function getPdfLibrary() {
   if (!pdfLibraryPromise) {
@@ -400,6 +607,7 @@ function refresh() {
   formattedBlocks = importedBlocks || formatText(sourceText.value);
   renderPreview(formattedBlocks);
   previewState.textContent = formattedBlocks.length || extractedAssets.length ? "已排版" : "待排版";
+  scheduleDraftSave();
 }
 
 function setFileStatus(message, isError = false) {
@@ -411,6 +619,7 @@ function markPreviewEdited(message = "已应用编辑格式。") {
   previewDirty = true;
   previewState.textContent = "已编辑";
   setFileStatus(message);
+  scheduleDraftSave();
 }
 
 function focusPreviewForCommand() {
@@ -1552,6 +1761,7 @@ function applyDesignSettings() {
   resultPane.style.setProperty("--preview-font-family", fontFamily);
   resultPane.style.setProperty("--theme-accent", activePalette);
   renderPreview(formattedBlocks);
+  scheduleDraftSave();
 }
 
 function applyThemePreset(themeName) {
@@ -1621,6 +1831,10 @@ document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement) fullscreenButton.textContent = "全屏";
 });
 
+window.addEventListener("beforeunload", () => {
+  saveDraft({ mode: "auto", silent: true });
+});
+
 exportButton.addEventListener("click", async () => {
   try {
     await exportWordDocument();
@@ -1634,6 +1848,29 @@ exportMdButton.addEventListener("click", () => {
     exportMarkdownDocument();
   } catch (error) {
     setFileStatus(error.message || "Markdown 导出失败，请稍后再试。", true);
+  }
+});
+
+saveDraftButton.addEventListener("click", () => {
+  saveDraft({ mode: "manual", silent: false });
+});
+
+clearDraftsButton.addEventListener("click", () => {
+  if (!readDrafts().length) return;
+  const confirmed = window.confirm("确定清空本机保存的历史草稿吗？");
+  if (confirmed) clearDrafts();
+});
+
+draftList.addEventListener("click", (event) => {
+  const restoreButton = event.target.closest("[data-restore-draft]");
+  if (restoreButton) {
+    restoreDraft(restoreButton.dataset.restoreDraft);
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-delete-draft]");
+  if (deleteButton) {
+    deleteDraft(deleteButton.dataset.deleteDraft);
   }
 });
 
@@ -1694,5 +1931,6 @@ fileInput.addEventListener("change", async () => {
 
 copyButton.addEventListener("click", copyOutput);
 
+renderDraftList();
 refresh();
 applyDesignSettings();

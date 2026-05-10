@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TeXflow 快排版</title>
-    <link rel="stylesheet" href="./styles.css?v=20260510-split2" />
+    <link rel="stylesheet" href="./styles.css?v=20260510-drafts" />
   </head>
   <body>
     <header class="topbar">
@@ -53,6 +53,20 @@
               <strong>排版设置</strong>
               <span>主题、文本框、字体</span>
             </div>
+
+            <section class="draft-panel" aria-label="历史草稿">
+              <div class="draft-panel-head">
+                <div>
+                  <strong>历史草稿</strong>
+                  <span id="draftHint">本机自动保存</span>
+                </div>
+                <button class="draft-save-button" type="button" id="saveDraftButton">保存</button>
+              </div>
+              <div class="draft-list" id="draftList" aria-live="polite">
+                <p class="draft-empty">暂无草稿</p>
+              </div>
+              <button class="draft-clear-button" type="button" id="clearDraftsButton">清空历史草稿</button>
+            </section>
 
             <section class="design-panel" aria-label="排版样式设置">
               <details class="settings-group" open>
@@ -254,6 +268,6 @@
 
     <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
-    <script src="./script.js?v=20260510-split2" type="module"></script>
+    <script src="./script.js?v=20260510-drafts" type="module"></script>
   </body>
 </html>
