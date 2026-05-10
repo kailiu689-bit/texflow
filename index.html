@@ -71,6 +71,20 @@
               <span>主题、文本框、字体</span>
             </div>
 
+            <section class="draft-panel" aria-label="历史草稿">
+              <div class="draft-panel-head">
+                <div>
+                  <strong>历史草稿</strong>
+                  <span id="draftHint">本机自动保存</span>
+                </div>
+                <button class="draft-save-button" type="button" id="saveDraftButton">保存</button>
+              </div>
+              <div class="draft-list" id="draftList" aria-live="polite">
+                <p class="draft-empty">暂无草稿</p>
+              </div>
+              <button class="draft-clear-button" type="button" id="clearDraftsButton">清空历史草稿</button>
+            </section>
+
             <section class="design-panel" aria-label="排版样式设置">
               <details class="settings-group" open>
                 <summary>主题</summary>
