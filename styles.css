@@ -1,15 +1,28 @@
 :root {
-  --ink: #151515;
-  --muted: #66635e;
-  --paper: #f8f4eb;
-  --paper-deep: #eee5d6;
-  --desk: #f1f4fd;
-  --line: #d7cdbc;
-  --white: #fffdfa;
-  --accent: #0f7b6c;
-  --accent-deep: #075f54;
+  --ink: #0f161e;
+  --muted: #333942;
+  --paper: #fff5ee;
+  --paper-deep: #fde8ce;
+  --desk: #fff5ee;
+  --line: #eadfce;
+  --white: #ffffff;
+  --accent: #004038;
+  --accent-deep: #012620;
+  --accent-soft: #00544c;
+  --sky-haze: #bee9f4;
+  --spring: #7edcaf;
   --red: #d4472f;
-  --shadow: 0 24px 70px rgba(39, 31, 18, 0.16);
+  --shadow: 0 16px 42px rgba(1, 38, 32, 0.08);
+  --ui-font: "Avenir Next", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+  --article-font: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  --app-bg: #f6f4ee;
+  --surface: #fffdf8;
+  --surface-strong: #ffffff;
+  --panel-line: #e4ded2;
+  --control-line: #d7d0c3;
+  --control-hover: #f3efe6;
+  --editor-ink: #1f2328;
+  --editor-muted: #73716c;
 }
 
 * {
@@ -689,74 +702,6 @@ textarea {
   margin-bottom: 14px;
 }
 
-.preview.theme-brief p {
-  margin-bottom: 12px;
-}
-
-.preview.theme-brief {
-  background: #fbfbf8;
-}
-
-.preview.theme-brief p {
-  padding-left: 12px;
-  border-left: 2px solid #d9dee7;
-}
-
-.preview.theme-editorial h2 {
-  margin: 38px 0 20px;
-  padding: 18px 0;
-  border-top: 2px solid #151a1e;
-  border-bottom: 1px solid #151a1e;
-  border-left: 0;
-  font-size: 34px;
-  letter-spacing: 0;
-}
-
-.preview.theme-editorial p:first-of-type {
-  font-size: calc(var(--preview-font-size, 16px) + 2px);
-}
-
-.preview.theme-spring {
-  color: #23322b;
-  background:
-    linear-gradient(135deg, rgba(110, 168, 129, 0.16), transparent 34%),
-    #fbfff8;
-}
-
-.preview.theme-spring h2 {
-  border-left: 0;
-  padding-left: 0;
-  color: #366e50;
-}
-
-.preview.theme-spring h2::before {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 10px;
-  border-radius: 999px;
-  background: #8bbf7e;
-  content: "";
-}
-
-.preview.theme-quiet {
-  color: #2e3a35;
-  background: #f8faf9;
-}
-
-.preview.theme-quiet h2,
-.preview.theme-quiet p {
-  max-width: 34em;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.preview.theme-quiet h2 {
-  padding-left: 0;
-  border-left: 0;
-  text-align: center;
-}
-
 .preview.theme-digital h2 {
   font-family: "Avenir Next", "Hiragino Sans GB", sans-serif;
   text-transform: uppercase;
@@ -1224,24 +1169,6 @@ textarea {
 }
 
 /* Workable-inspired application shell */
-:root {
-  --ink: #0f161e;
-  --muted: #333942;
-  --paper: #fff5ee;
-  --paper-deep: #fde8ce;
-  --desk: #fff5ee;
-  --line: #eadfce;
-  --white: #ffffff;
-  --accent: #004038;
-  --accent-deep: #012620;
-  --accent-soft: #00544c;
-  --sky-haze: #bee9f4;
-  --spring: #7edcaf;
-  --red: #d4472f;
-  --shadow: 0 16px 42px rgba(1, 38, 32, 0.08);
-  --ui-font: "Avenir Next", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
-  --article-font: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
-}
 
 body {
   min-height: 100vh;
@@ -1606,16 +1533,6 @@ button:disabled {
 }
 
 /* Rico MD inspired workbench layout */
-:root {
-  --app-bg: #f6f4ee;
-  --surface: #fffdf8;
-  --surface-strong: #ffffff;
-  --panel-line: #e4ded2;
-  --control-line: #d7d0c3;
-  --control-hover: #f3efe6;
-  --editor-ink: #1f2328;
-  --editor-muted: #73716c;
-}
 
 body {
   background:

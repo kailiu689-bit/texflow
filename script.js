@@ -54,7 +54,6 @@ let pdfLibraryPromise;
 let extractedAssets = [];
 let importedBlocks = null;
 let activeTheme = "long";
-let activePlatform = "wechat";
 let activePalette = "#004038";
 let headingIndex = 0;
 let calloutIndex = 0;
@@ -343,6 +342,76 @@ function stripMarkdownMarkers(text) {
     .trim();
 }
 
+function textToSafeParagraphs(text) {
+  return text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
+function sanitizePastedHtml(html) {
+  const holder = document.createElement("div");
+  holder.innerHTML = html;
+  const allowedTags = new Set([
+    "A",
+    "ASIDE",
+    "B",
+    "BR",
+    "DIV",
+    "EM",
+    "FIGURE",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "HR",
+    "I",
+    "IMG",
+    "LI",
+    "OL",
+    "P",
+    "S",
+    "SPAN",
+    "STRONG",
+    "TABLE",
+    "TBODY",
+    "TD",
+    "TH",
+    "TR",
+    "U",
+    "UL",
+  ]);
+  const allowedAttributes = new Set(["href", "src", "alt", "title", "style", "colspan", "rowspan"]);
+
+  holder.querySelectorAll("script, style, iframe, object, embed, link, meta").forEach((node) => node.remove());
+
+  Array.from(holder.querySelectorAll("*")).forEach((node) => {
+    if (!allowedTags.has(node.tagName)) {
+      node.replaceWith(...Array.from(node.childNodes));
+      return;
+    }
+
+    Array.from(node.attributes).forEach((attribute) => {
+      const name = attribute.name.toLowerCase();
+      const value = attribute.value.trim();
+      if (name.startsWith("on") || !allowedAttributes.has(name)) {
+        node.removeAttribute(attribute.name);
+        return;
+      }
+      if ((name === "href" || name === "src") && /^(javascript|data:text|vbscript):/i.test(value)) {
+        node.removeAttribute(attribute.name);
+      }
+      if (name === "style") {
+        node.setAttribute("style", value.replace(/expression\s*\(|url\s*\(\s*javascript:/gi, ""));
+      }
+    });
+  });
+
+  return holder.innerHTML;
+}
+
 function sanitizeLine(text) {
   return stripMarkdownMarkers(text).replace(/\s+/g, " ").trim();
 }
@@ -461,7 +530,7 @@ function renderPreview(blocks) {
   previewDirty = false;
   headingIndex = 0;
   calloutIndex = 0;
-  preview.className = `preview result-panel active ${activeStyle} theme-${activeTheme} platform-${activePlatform} heading-${headingStyleSelect.value} box-${boxStyleSelect.value} body-${bodyStyleSelect.value} image-${imageStyleSelect.value} divider-${dividerStyleSelect.value}`;
+  preview.className = `preview result-panel active ${activeStyle} theme-${activeTheme} platform-wechat heading-${headingStyleSelect.value} box-${boxStyleSelect.value} body-${bodyStyleSelect.value} image-${imageStyleSelect.value} divider-${dividerStyleSelect.value}`;
 
   if (!blocks.length) {
     preview.classList.add("empty");
@@ -813,7 +882,7 @@ function getCopyStyles() {
   const fontSize = Number(fontSizeSelect.value || 16);
   const lineHeight = Number(lineHeightSelect.value || 2);
   const fontFamily = copyFontFamilies[fontFamilySelect.value] || copyFontFamilies.serif;
-  const headingColor = activePlatform === "wechat" ? activePalette : "#1b1b1b";
+  const headingColor = activePalette;
   const headingStyles = {
     bar: `padding:10px 14px;border-left:5px solid ${activePalette};background:#f1f6ff;color:${headingColor}`,
     center: `padding:0;text-align:center;border-left:0;color:${activePalette}`,
@@ -928,32 +997,17 @@ async function buildRichHtmlOutput() {
       if (block.type === "heading") {
         copyHeadingIndex += 1;
         const headingText = escapeHtml(stripMarkdownMarkers(block.text));
-        const titleStyle =
-          activePlatform === "wechat"
-            ? [
-                "margin:30px 0 16px",
-                "text-align:center",
-                `font-size:${fontSize + 8}px`,
-                "font-weight:700",
-                `line-height:${Math.max(1.5, lineHeight - 0.3)}`,
-                `color:${headingColor}`,
-                heading,
-              ].join(";")
-            : [
-                "margin:30px 0 14px",
-                `padding-left:${activePlatform === "redbook" ? 0 : 16}px`,
-                `border-left:${activePlatform === "redbook" ? 0 : 4}px solid ${headingColor}`,
-                `font-size:${fontSize + 8}px`,
-                "font-weight:700",
-                `line-height:${Math.max(1.5, lineHeight - 0.3)}`,
-                `color:${headingColor}`,
-                heading,
-              ].join(";");
+        const titleStyle = [
+          "margin:30px 0 16px",
+          "text-align:center",
+          `font-size:${fontSize + 8}px`,
+          "font-weight:700",
+          `line-height:${Math.max(1.5, lineHeight - 0.3)}`,
+          `color:${headingColor}`,
+          heading,
+        ].join(";");
 
-        const afterLine =
-          activePlatform === "wechat"
-            ? `<div style="width:38px;height:3px;background:${headingColor};margin:12px auto 0;border-radius:999px;"></div>`
-            : "";
+        const afterLine = `<div style="width:38px;height:3px;background:${headingColor};margin:12px auto 0;border-radius:999px;"></div>`;
 
         const indexBadge =
           headingStyleSelect.value === "numbered"
@@ -969,9 +1023,7 @@ async function buildRichHtmlOutput() {
       const highlightStyle = highlighted
         ? `color:${activePalette};text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;`
         : "";
-      const background =
-        activePlatform === "redbook" ? "background:#ffffff;border-radius:12px;padding:12px 14px;" : "";
-      blocksHtmlParts.push(`<p style="margin:0 0 18px;font-size:${fontSize}px;line-height:${lineHeight};font-weight:${weight};color:${bodyColor};${background};${paragraph};${highlightStyle}">${paragraphText}</p>`);
+      blocksHtmlParts.push(`<p style="margin:0 0 18px;font-size:${fontSize}px;line-height:${lineHeight};font-weight:${weight};color:${bodyColor};${paragraph};${highlightStyle}">${paragraphText}</p>`);
   }
   const blocksHtml = blocksHtmlParts.join("");
 
@@ -1538,11 +1590,9 @@ async function copyFullOutput() {
   const hasImages = formattedBlocks.some((block) => block.type === "image") || extractedAssets.length > 0;
   const risk = getCopyRisk(copyOutput.lastMetrics || { imageCount: 0, totalImageBytes: 0 });
   setFileStatus(
-    activePlatform === "wechat" && hasImages
+    hasImages
       ? risk.message || "已复制含压缩图片的公众号富文本。"
-      : activePlatform === "wechat"
-        ? "已复制公众号富文本，可直接粘贴到后台。"
-        : "已复制富文本结果。",
+      : "已复制公众号富文本，可直接粘贴到后台。",
   );
   window.setTimeout(() => {
     copyButton.textContent = "复制到公众号";
@@ -1756,6 +1806,14 @@ sourceText.addEventListener("input", () => {
 });
 preview.addEventListener("input", () => {
   markPreviewEdited("已进入右侧编辑模式，复制时会使用你修改后的内容。");
+});
+preview.addEventListener("paste", (event) => {
+  event.preventDefault();
+  const html = event.clipboardData?.getData("text/html") || "";
+  const text = event.clipboardData?.getData("text/plain") || "";
+  const safeHtml = html ? sanitizePastedHtml(html) : textToSafeParagraphs(text);
+  document.execCommand("insertHTML", false, safeHtml);
+  markPreviewEdited("已粘贴并清理外部格式。");
 });
 highlightToggle.addEventListener("change", () => renderPreview(formattedBlocks));
 insertBoxButton.addEventListener("click", () => {
