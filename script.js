@@ -65,7 +65,13 @@ let isRestoringDraft = false;
 const DRAFTS_STORAGE_KEY = "texflow.drafts.v1";
 const AUTO_DRAFT_ID = "auto";
 const MAX_DRAFTS = 8;
-const MAX_PREVIEW_SNAPSHOT_CHARS = 950000;
+const MAX_PREVIEW_SNAPSHOT_CHARS = 4_200_000;
+const DRAFT_IMAGE_OPTIONS = {
+  maxWidth: 640,
+  targetBytes: 180 * 1024,
+  quality: 0.68,
+  minQuality: 0.34,
+};
 
 const fontFamilies = {
   serif: '"Songti SC", "Noto Serif CJK SC", serif',
@@ -156,16 +162,33 @@ function getDraftTitle() {
   return (previewTitle || sourceTitle || "未命名草稿").slice(0, 28);
 }
 
-function getPreviewSnapshotHtml() {
+async function getPreviewSnapshotHtml() {
   if (!preview.innerText.trim() && preview.classList.contains("empty")) return "";
-  const html = preview.innerHTML;
+  const clone = preview.cloneNode(true);
+  clone.removeAttribute("contenteditable");
+  clone.removeAttribute("id");
+
+  const images = Array.from(clone.querySelectorAll("img"));
+  for (const image of images) {
+    if (!image.src?.startsWith("data:image/")) continue;
+    try {
+      const compressed = await compressImageForWechat({ src: image.src }, DRAFT_IMAGE_OPTIONS);
+      image.src = compressed.src;
+      image.setAttribute("style", `${image.getAttribute("style") || ""};max-width:100%;height:auto;`);
+    } catch (error) {
+      image.setAttribute("data-draft-image-warning", "compress-failed");
+    }
+  }
+
+  const html = clone.innerHTML;
   return html.length <= MAX_PREVIEW_SNAPSHOT_CHARS ? html : "";
 }
 
-function buildDraft(id = `draft-${Date.now()}`, mode = "manual") {
+async function buildDraft(id = `draft-${Date.now()}`, mode = "manual") {
   const source = sourceText.value;
-  const previewHtml = getPreviewSnapshotHtml();
+  const previewHtml = await getPreviewSnapshotHtml();
   const textLength = (preview.innerText || source).trim().length;
+  const imageCount = preview.querySelectorAll("img").length;
   return {
     id,
     mode,
@@ -175,6 +198,7 @@ function buildDraft(id = `draft-${Date.now()}`, mode = "manual") {
     previewDirty,
     settings: getDraftSettings(),
     textLength,
+    imageCount,
     paragraphCount: source ? source.split(/\n+/).filter(Boolean).length : 0,
     updatedAt: Date.now(),
     hasFullPreview: Boolean(previewHtml),
@@ -194,11 +218,11 @@ function formatDraftTime(timestamp) {
   return `${month}-${day} ${hour}:${minute}`;
 }
 
-function saveDraft({ mode = "auto", silent = true } = {}) {
+async function saveDraft({ mode = "auto", silent = true } = {}) {
   if (!shouldSaveDraft()) return false;
 
   const drafts = readDrafts();
-  const draft = buildDraft(mode === "auto" ? AUTO_DRAFT_ID : `draft-${Date.now()}`, mode);
+  const draft = await buildDraft(mode === "auto" ? AUTO_DRAFT_ID : `draft-${Date.now()}`, mode);
   const nextDrafts =
     mode === "auto"
       ? [draft, ...drafts.filter((item) => item.id !== AUTO_DRAFT_ID)]
@@ -218,7 +242,9 @@ function saveDraft({ mode = "auto", silent = true } = {}) {
 function scheduleDraftSave() {
   if (isRestoringDraft) return;
   window.clearTimeout(draftSaveTimer);
-  draftSaveTimer = window.setTimeout(() => saveDraft({ mode: "auto", silent: true }), 900);
+  draftSaveTimer = window.setTimeout(() => {
+    saveDraft({ mode: "auto", silent: true });
+  }, 1200);
 }
 
 function restoreDraft(draftId) {
@@ -277,7 +303,7 @@ function renderDraftList() {
         <article class="draft-item">
           <button class="draft-restore" type="button" data-restore-draft="${draft.id}">
             <strong>${escapeHtml(draft.title)}</strong>
-            <span>${formatDraftTime(draft.updatedAt)} · ${draft.textLength || 0} 字${draft.hasFullPreview ? "" : " · 轻量"}</span>
+            <span>${formatDraftTime(draft.updatedAt)} · ${draft.textLength || 0} 字${draft.imageCount ? ` · ${draft.imageCount} 图` : ""}${draft.hasFullPreview ? "" : " · 轻量"}</span>
           </button>
           <button class="draft-delete" type="button" data-delete-draft="${draft.id}" aria-label="删除 ${escapeHtml(draft.title)}">删</button>
         </article>
