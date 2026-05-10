@@ -2077,6 +2077,131 @@ body {
   color: var(--editor-muted);
 }
 
+.copy-plan-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 22, 30, 0.32);
+  backdrop-filter: blur(4px);
+}
+
+.copy-plan-dialog {
+  width: min(640px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  padding: 18px;
+  border: 1px solid var(--panel-line);
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 24px 70px rgba(15, 22, 30, 0.18);
+  overflow: auto;
+}
+
+.copy-plan-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--panel-line);
+}
+
+.copy-plan-head strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--editor-ink);
+  font-size: 18px;
+}
+
+.copy-plan-head p {
+  margin: 0;
+  color: var(--editor-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.copy-plan-head button,
+.copy-plan-actions button,
+.copy-segment-list button {
+  border: 1px solid var(--control-line);
+  border-radius: 10px;
+  color: var(--editor-ink);
+  background: #ffffff;
+  cursor: pointer;
+  font-family: var(--ui-font);
+  font-weight: 800;
+}
+
+.copy-plan-head button {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.copy-plan-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.copy-plan-stats span {
+  padding: 10px;
+  border: 1px solid var(--panel-line);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--editor-muted);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.copy-plan-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.copy-plan-actions button,
+.copy-segment-list button {
+  min-height: 42px;
+  padding: 0 14px;
+}
+
+.copy-plan-actions button:first-child {
+  border-color: var(--accent);
+  color: #ffffff;
+  background: var(--accent);
+}
+
+.copy-segment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.copy-segment-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 50px;
+  text-align: left;
+}
+
+.copy-segment-list button small {
+  color: var(--editor-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.copy-segment-list button.copied {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #f2fbf7;
+}
+
 .format-picker {
   display: inline-flex;
   align-items: center;

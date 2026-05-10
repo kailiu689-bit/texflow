@@ -525,27 +525,44 @@ function formatBytes(bytes) {
 }
 
 function getCopyRisk(metrics) {
-  if (!metrics.imageCount) {
-    return { level: "none", message: "" };
-  }
+  metrics = {
+    textLength: 0,
+    imageCount: 0,
+    totalImageBytes: 0,
+    calloutCount: 0,
+    blockCount: 0,
+    ...metrics,
+  };
 
-  if (metrics.imageCount >= 9 || metrics.totalImageBytes >= 3 * 1024 * 1024) {
+  if (
+    metrics.imageCount >= 7 ||
+    metrics.totalImageBytes >= 3 * 1024 * 1024 ||
+    metrics.textLength >= 9000 ||
+    metrics.calloutCount >= 7
+  ) {
     return {
       level: "high",
-      message: `建议分段复制：本次含 ${metrics.imageCount} 张图，压缩后约 ${formatBytes(metrics.totalImageBytes)}，公众号后台可能白屏。建议每段 3-4 张图。`,
+      message: `高风险：约 ${metrics.textLength} 字、${metrics.imageCount} 张图、${metrics.calloutCount} 个文本框，建议分段复制。`,
     };
   }
 
-  if (metrics.imageCount >= 5 || metrics.totalImageBytes >= 1.6 * 1024 * 1024) {
+  if (
+    metrics.imageCount >= 4 ||
+    metrics.totalImageBytes >= 1.6 * 1024 * 1024 ||
+    metrics.textLength >= 4500 ||
+    metrics.calloutCount >= 4
+  ) {
     return {
       level: "medium",
-      message: `建议分段复制更稳：本次含 ${metrics.imageCount} 张图，压缩后约 ${formatBytes(metrics.totalImageBytes)}。`,
+      message: `中风险：约 ${metrics.textLength} 字、${metrics.imageCount} 张图、${metrics.calloutCount} 个文本框，分段复制更稳。`,
     };
   }
 
   return {
     level: "low",
-    message: `已复制含 ${metrics.imageCount} 张压缩图片的公众号富文本，图片约 ${formatBytes(metrics.totalImageBytes)}。`,
+    message: metrics.imageCount
+      ? `低风险：${metrics.imageCount} 张图，约 ${formatBytes(metrics.totalImageBytes)}。`
+      : "",
   };
 }
 
@@ -816,6 +833,7 @@ function renderWechatBoxHtml(title, text, index, fontSize, lineHeight, bodyColor
 async function fallbackCopyHtml(html, text) {
   const holder = document.createElement("div");
   holder.contentEditable = "true";
+  holder.className = preview.className;
   holder.style.position = "fixed";
   holder.style.left = "-9999px";
   holder.style.top = "0";
@@ -874,6 +892,213 @@ async function copyEditedPreviewSelection(text) {
       .reduce((sum, bytes) => sum + bytes, 0),
     fallbackImages: 0,
   };
+}
+
+function getPreviewCopyNodes() {
+  return Array.from(preview.children).filter((node) => !node.matches(".task-mask"));
+}
+
+function getNodeCopyWeight(node) {
+  const textLength = node.innerText?.trim().length || 0;
+  const imageCount = node.querySelectorAll("img").length;
+  const calloutCount = node.matches(".text-box") || node.querySelector(".text-box") ? 1 : 0;
+  return {
+    textLength,
+    imageCount,
+    calloutCount,
+    weight: Math.max(1, Math.ceil(textLength / 900)) + imageCount * 3 + calloutCount * 2,
+  };
+}
+
+function analyzeCopyContent() {
+  const nodes = getPreviewCopyNodes();
+  const images = Array.from(preview.querySelectorAll("img"));
+  const totalImageBytes = images
+    .map((image) => (image.src?.startsWith("data:image/") ? dataUrlSize(image.src) : 0))
+    .reduce((sum, bytes) => sum + bytes, 0);
+
+  return {
+    textLength: preview.innerText.trim().length,
+    imageCount: images.length,
+    totalImageBytes,
+    calloutCount: preview.querySelectorAll(".text-box, aside").length,
+    blockCount: nodes.length,
+    edited: previewDirty,
+  };
+}
+
+function createCopySegments() {
+  const nodes = getPreviewCopyNodes();
+  if (!nodes.length) return [];
+
+  const metrics = analyzeCopyContent();
+  let targetCount = 1;
+  if (metrics.imageCount >= 7 || metrics.textLength >= 9000 || metrics.calloutCount >= 7) {
+    targetCount = 4;
+  } else if (metrics.imageCount >= 5 || metrics.textLength >= 6500 || metrics.calloutCount >= 5) {
+    targetCount = 3;
+  } else if (metrics.imageCount >= 4 || metrics.textLength >= 4500 || metrics.calloutCount >= 4) {
+    targetCount = 2;
+  }
+  targetCount = Math.min(4, Math.max(2, targetCount));
+
+  const totalWeight = nodes.reduce((sum, node) => sum + getNodeCopyWeight(node).weight, 0);
+  const targetWeight = Math.max(1, Math.ceil(totalWeight / targetCount));
+  const segments = [];
+  let current = [];
+  let currentWeight = 0;
+
+  nodes.forEach((node, index) => {
+    const nodeWeight = getNodeCopyWeight(node).weight;
+    const remainingNodes = nodes.length - index;
+    const remainingSlots = targetCount - segments.length - 1;
+    const shouldSplit = current.length && currentWeight + nodeWeight > targetWeight && remainingSlots > 0 && remainingNodes > remainingSlots;
+
+    if (shouldSplit) {
+      segments.push(current);
+      current = [];
+      currentWeight = 0;
+    }
+
+    current.push(node);
+    currentWeight += nodeWeight;
+  });
+
+  if (current.length) segments.push(current);
+  return segments.slice(0, 4).map((segmentNodes, index) => {
+    const textLength = segmentNodes.reduce((sum, node) => sum + (node.innerText?.trim().length || 0), 0);
+    const imageCount = segmentNodes.reduce((sum, node) => sum + node.querySelectorAll("img").length, 0);
+    const calloutCount = segmentNodes.reduce(
+      (sum, node) => sum + (node.matches(".text-box") || node.querySelector(".text-box") ? 1 : 0),
+      0,
+    );
+    return {
+      index,
+      nodes: segmentNodes,
+      textLength,
+      imageCount,
+      calloutCount,
+    };
+  });
+}
+
+async function copyDomNodesAsSelection(nodes, textFallback) {
+  const holder = document.createElement("div");
+  holder.contentEditable = "true";
+  holder.className = preview.className;
+  holder.style.position = "fixed";
+  holder.style.left = "-9999px";
+  holder.style.top = "0";
+  holder.style.width = `${Math.max(360, preview.clientWidth)}px`;
+  holder.style.maxHeight = "none";
+  holder.style.overflow = "visible";
+  holder.style.background = "#ffffff";
+  holder.style.pointerEvents = "none";
+  nodes.forEach((node) => holder.appendChild(node.cloneNode(true)));
+  document.body.appendChild(holder);
+
+  const selection = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(holder);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+
+  const copied = document.execCommand("copy");
+  selection?.removeAllRanges();
+  holder.remove();
+
+  if (!copied) {
+    await navigator.clipboard.writeText(textFallback);
+  }
+}
+
+function copyPlainText() {
+  const text = buildMarkdownOutput("").trim();
+  if (!text) {
+    setFileStatus("没有可复制的文字内容。", true);
+    return;
+  }
+  navigator.clipboard.writeText(text);
+  setFileStatus("已复制纯文字版。");
+}
+
+async function copyPreviewSegment(segment) {
+  const text = segment.nodes.map((node) => node.innerText || "").join("\n\n").trim();
+  await copyDomNodesAsSelection(segment.nodes, text);
+  setFileStatus(`已复制第 ${segment.index + 1} 段，请到公众号后台粘贴。`);
+}
+
+function closeCopyPlanPanel() {
+  document.querySelector(".copy-plan-backdrop")?.remove();
+}
+
+function openCopyPlanPanel(metrics, risk, segments) {
+  closeCopyPlanPanel();
+  const backdrop = document.createElement("div");
+  backdrop.className = "copy-plan-backdrop";
+  const segmentButtons = segments
+    .map(
+      (segment) => `
+        <button type="button" data-copy-segment="${segment.index}">
+          <span>复制第 ${segment.index + 1} 段</span>
+          <small>${segment.textLength} 字 / ${segment.imageCount} 图 / ${segment.calloutCount} 框</small>
+        </button>
+      `,
+    )
+    .join("");
+
+  backdrop.innerHTML = `
+    <section class="copy-plan-dialog" role="dialog" aria-modal="true" aria-label="复制前检测">
+      <div class="copy-plan-head">
+        <div>
+          <strong>复制前检测</strong>
+          <p>${risk.message}</p>
+        </div>
+        <button type="button" data-close-copy-plan>关闭</button>
+      </div>
+      <div class="copy-plan-stats">
+        <span>${metrics.textLength} 字</span>
+        <span>${metrics.imageCount} 张图</span>
+        <span>${metrics.calloutCount} 个文本框</span>
+        <span>${segments.length} 段建议</span>
+      </div>
+      <div class="copy-plan-actions">
+        <button type="button" data-copy-full>复制整篇</button>
+        <button type="button" data-copy-plain>只复制文字版</button>
+      </div>
+      <div class="copy-segment-list">
+        ${segmentButtons}
+      </div>
+    </section>
+  `;
+  document.body.appendChild(backdrop);
+
+  backdrop.addEventListener("click", async (event) => {
+    if (event.target === backdrop || event.target.closest("[data-close-copy-plan]")) {
+      closeCopyPlanPanel();
+      return;
+    }
+
+    if (event.target.closest("[data-copy-plain]")) {
+      copyPlainText();
+      closeCopyPlanPanel();
+      return;
+    }
+
+    if (event.target.closest("[data-copy-full]")) {
+      closeCopyPlanPanel();
+      await copyFullOutput({ skipPlan: true });
+      return;
+    }
+
+    const segmentButton = event.target.closest("[data-copy-segment]");
+    if (segmentButton) {
+      const segment = segments[Number(segmentButton.dataset.copySegment)];
+      await copyPreviewSegment(segment);
+      segmentButton.classList.add("copied");
+      segmentButton.querySelector("span").textContent = `已复制第 ${segment.index + 1} 段`;
+    }
+  });
 }
 
 function inlineComputedStyles(root) {
@@ -1029,7 +1254,7 @@ function exportMarkdownDocument() {
   setFileStatus(`已导出 Markdown 文件，大小约 ${formatBytes(blob.size)}。`);
 }
 
-async function copyOutput() {
+async function copyFullOutput() {
   const text = buildMarkdownOutput("");
 
   if (!text.trim()) {
@@ -1082,6 +1307,23 @@ async function copyOutput() {
   window.setTimeout(() => {
     copyButton.textContent = "复制到公众号";
   }, 1400);
+}
+
+async function copyOutput() {
+  const text = buildMarkdownOutput("");
+  if (!text.trim()) {
+    setFileStatus("没有可复制的内容。", true);
+    return;
+  }
+
+  const metrics = analyzeCopyContent();
+  const risk = getCopyRisk(metrics);
+  if (risk.level === "medium" || risk.level === "high") {
+    openCopyPlanPanel(metrics, risk, createCopySegments());
+    return;
+  }
+
+  await copyFullOutput();
 }
 
 function readFileAsArrayBuffer(file) {
