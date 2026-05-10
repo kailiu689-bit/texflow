@@ -743,27 +743,35 @@ function getCopyRisk(metrics) {
     ...metrics,
   };
 
+  const veryLongText = metrics.textLength >= 9000;
+  const longText = metrics.textLength >= 5200;
+  const manyImages = metrics.imageCount >= 7;
+  const severalImages = metrics.imageCount >= 5;
+  const hugeImages = metrics.totalImageBytes >= 8 * 1024 * 1024;
+  const largeImages = metrics.totalImageBytes >= 4.5 * 1024 * 1024;
+  const manyCallouts = metrics.calloutCount >= 7;
+  const severalCallouts = metrics.calloutCount >= 5;
+  const complexMediumArticle =
+    metrics.textLength >= 3600 &&
+    (metrics.imageCount >= 4 || metrics.totalImageBytes >= 3.5 * 1024 * 1024 || metrics.calloutCount >= 4);
+
   if (
-    metrics.imageCount >= 7 ||
-    metrics.totalImageBytes >= 3 * 1024 * 1024 ||
-    metrics.textLength >= 9000 ||
-    metrics.calloutCount >= 7
+    veryLongText ||
+    manyImages ||
+    hugeImages ||
+    manyCallouts ||
+    (longText && (metrics.imageCount >= 4 || metrics.calloutCount >= 4 || metrics.totalImageBytes >= 3.5 * 1024 * 1024))
   ) {
     return {
       level: "high",
-      message: `高风险：约 ${metrics.textLength} 字、${metrics.imageCount} 张图、${metrics.calloutCount} 个文本框，建议分段复制。`,
+      message: `高风险：约 ${metrics.textLength} 字、${metrics.imageCount} 张图、图片约 ${formatBytes(metrics.totalImageBytes)}、${metrics.calloutCount} 个文本框，建议分段复制。`,
     };
   }
 
-  if (
-    metrics.imageCount >= 4 ||
-    metrics.totalImageBytes >= 1.6 * 1024 * 1024 ||
-    metrics.textLength >= 4500 ||
-    metrics.calloutCount >= 4
-  ) {
+  if (longText || severalImages || largeImages || severalCallouts || complexMediumArticle) {
     return {
       level: "medium",
-      message: `中风险：约 ${metrics.textLength} 字、${metrics.imageCount} 张图、${metrics.calloutCount} 个文本框，分段复制更稳。`,
+      message: `中风险：约 ${metrics.textLength} 字、${metrics.imageCount} 张图、图片约 ${formatBytes(metrics.totalImageBytes)}、${metrics.calloutCount} 个文本框，分段复制更稳。`,
     };
   }
 
