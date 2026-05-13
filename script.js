@@ -175,14 +175,38 @@ function sanitizeStyleAttribute(styleText) {
       if (separatorIndex === -1) return "";
       const property = rule.slice(0, separatorIndex).trim().toLowerCase();
       const value = rule.slice(separatorIndex + 1).trim();
+      const normalizedValue = value.replace(/[\u0000-\u001f\u007f\s]+/g, "").toLowerCase();
       if (!allowedStyleProperties.has(property)) return "";
-      if (/expression\s*\(|javascript:|vbscript:|data:text|behavior\s*:|-moz-binding|-o-link|url\s*\(/i.test(value)) {
+      if (
+        /expression\s*\(|behavior\s*:|-moz-binding|-o-link|u\s*r\s*l\s*\(/i.test(value) ||
+        normalizedValue.includes("javascript:") ||
+        normalizedValue.includes("vbscript:") ||
+        normalizedValue.includes("data:text")
+      ) {
         return "";
       }
       return `${property}:${value}`;
     })
     .filter(Boolean)
     .join(";");
+}
+
+function isSafePastedUrl(value, attributeName) {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const normalized = trimmed.replace(/[\u0000-\u001f\u007f\s]+/g, "").toLowerCase();
+  if (/^(javascript|vbscript|file|data:text):/.test(normalized)) return false;
+
+  if (attributeName === "src") {
+    return (
+      /^https?:\/\//i.test(trimmed) ||
+      /^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,/i.test(trimmed) ||
+      /^\/(?!\/)/.test(trimmed) ||
+      /^\.\.?\//.test(trimmed)
+    );
+  }
+
+  return /^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed) || /^tel:/i.test(trimmed) || /^#/.test(trimmed) || /^\/(?!\/)/.test(trimmed) || /^\.\.?\//.test(trimmed);
 }
 
 function sanitizePastedHtml(html) {
@@ -234,7 +258,7 @@ function sanitizePastedHtml(html) {
         node.removeAttribute(attribute.name);
         return;
       }
-      if ((name === "href" || name === "src") && /^(javascript|data:text|vbscript):/i.test(value)) {
+      if ((name === "href" || name === "src") && !isSafePastedUrl(value, name)) {
         node.removeAttribute(attribute.name);
       }
       if (name === "style") {
