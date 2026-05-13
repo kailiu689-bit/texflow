@@ -78,25 +78,13 @@ const themePresets = {
   contrast: { heading: "stamp", box: "court", body: "compact", image: "frame", divider: "ribbon", palette: "#151a1e" },
 };
 
-const uploadSizeLimits = {
-  text: 2 * 1024 * 1024,
-  document: 50 * 1024 * 1024,
-  image: 8 * 1024 * 1024,
-  extractedImages: 25 * 1024 * 1024,
-};
-
 function getPdfLibrary() {
   if (!pdfLibraryPromise) {
-    pdfLibraryPromise = import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs")
-      .then((pdfjsLib) => {
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
-        return pdfjsLib;
-      })
-      .catch(() => {
-        pdfLibraryPromise = null;
-        throw new Error("PDF 解析库加载失败，请检查网络后刷新页面再试。");
-      });
+    pdfLibraryPromise = import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs").then((pdfjsLib) => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+      return pdfjsLib;
+    });
   }
 
   return pdfLibraryPromise;
@@ -262,12 +250,7 @@ function sanitizePastedHtml(html) {
         node.removeAttribute(attribute.name);
       }
       if (name === "style") {
-        const safeStyle = sanitizeStyleAttribute(value);
-        if (safeStyle) {
-          node.setAttribute("style", safeStyle);
-        } else {
-          node.removeAttribute("style");
-        }
+        node.setAttribute("style", value.replace(/expression\s*\(|url\s*\(\s*javascript:/gi, ""));
       }
     });
   });
@@ -682,52 +665,18 @@ async function compressImageForWechat(asset, options = {}) {
   return { src: output, bytes: dataUrlSize(output) };
 }
 
+const copyImageOptions = {
+  maxWidth: 720,
+  targetBytes: 360 * 1024,
+  quality: 0.74,
+  minQuality: 0.36,
+};
+
 function formatBytes(bytes) {
   if (bytes < 1024 * 1024) {
     return `${Math.max(1, Math.round(bytes / 1024))}KB`;
   }
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
-}
-
-function getUploadSizeLimit(file, fileKind) {
-  if (fileKind === "text") {
-    return {
-      bytes: uploadSizeLimits.text,
-      label: "纯文本/Markdown",
-    };
-  }
-
-  if (fileKind === "document") {
-    return {
-      bytes: uploadSizeLimits.document,
-      label: /\.(docx|doc|wps)$/i.test(file.name) ? "Word/WPS 文档" : "PDF 文档",
-    };
-  }
-
-  if (fileKind === "image") {
-    return {
-      bytes: uploadSizeLimits.image,
-      label: "单张图片",
-    };
-  }
-
-  return null;
-}
-
-function validateUploadSize(file, fileKind) {
-  const limit = getUploadSizeLimit(file, fileKind);
-  if (!limit || file.size <= limit.bytes) return;
-
-  throw new Error(`${limit.label}不能超过 ${formatBytes(limit.bytes)}，当前文件约 ${formatBytes(file.size)}。`);
-}
-
-function validateExtractedImageBudget() {
-  const totalBytes = extractedAssets.reduce((sum, asset) => sum + dataUrlSize(asset.src || ""), 0);
-  if (totalBytes <= uploadSizeLimits.extractedImages) return;
-
-  extractedAssets = [];
-  importedBlocks = null;
-  throw new Error(`文档内图片约 ${formatBytes(totalBytes)}，超过 ${formatBytes(uploadSizeLimits.extractedImages)}，建议先压缩图片或分批处理。`);
 }
 
 function getCopyRisk(metrics) {
@@ -855,7 +804,7 @@ async function buildRichHtmlOutput() {
       if (block.type === "image") {
         try {
           const alt = escapeHtml(block.asset.alt || "文档图片");
-          const compressed = await compressImageForWechat(block.asset);
+          const compressed = await compressImageForWechat(block.asset, copyImageOptions);
           metrics.imageCount += 1;
           metrics.totalImageBytes += compressed.bytes || 0;
           blocksHtmlParts.push(`
@@ -950,7 +899,7 @@ async function buildEditedPreviewHtmlOutput() {
   for (const image of images) {
     if (!image.src) continue;
     try {
-      const compressed = await compressImageForWechat({ src: image.src });
+      const compressed = await compressImageForWechat({ src: image.src }, copyImageOptions);
       image.src = compressed.src;
       image.setAttribute("style", `${image.getAttribute("style") || ""};display:block;max-width:100%;height:auto;`);
       metrics.imageCount += 1;
@@ -1375,18 +1324,12 @@ function createWordBlob(html) {
     return {
       blob: window.htmlDocx.asBlob(html),
       extension: "docx",
-      usedFallback: false,
     };
-  }
-
-  if (window.__texflowDeps?.htmlDocxFailed) {
-    setFileStatus("DOCX 导出库加载失败，正在改用 DOC 兼容格式。", true);
   }
 
   return {
     blob: new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" }),
     extension: "doc",
-    usedFallback: true,
   };
 }
 
@@ -1400,19 +1343,17 @@ async function buildWordBlobUnderLimit() {
 
   let lastBlob = null;
   let lastExtension = "docx";
-  let lastUsedFallback = false;
   for (const plan of plans) {
     const html = await buildWordHtml(plan);
-    const { blob, extension, usedFallback } = createWordBlob(html);
+    const { blob, extension } = createWordBlob(html);
     lastBlob = blob;
     lastExtension = extension;
-    lastUsedFallback = usedFallback;
     if (blob.size < limit) {
-      return { blob, extension, withinLimit: true, usedFallback };
+      return { blob, extension, withinLimit: true };
     }
   }
 
-  return { blob: lastBlob, extension: lastExtension, withinLimit: false, usedFallback: lastUsedFallback };
+  return { blob: lastBlob, extension: lastExtension, withinLimit: false };
 }
 
 async function exportWordDocument() {
@@ -1423,7 +1364,7 @@ async function exportWordDocument() {
   }
 
   setFileStatus("正在生成小于 15MB 的 Word 文档...");
-  const { blob, extension, withinLimit, usedFallback } = await buildWordBlobUnderLimit();
+  const { blob, extension, withinLimit } = await buildWordBlobUnderLimit();
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -1432,12 +1373,10 @@ async function exportWordDocument() {
   URL.revokeObjectURL(url);
 
   setFileStatus(
-    usedFallback
-      ? `DOCX 导出库未加载，已改用 DOC 兼容格式，大小约 ${formatBytes(blob.size)}。`
-      : withinLimit
-        ? `已导出 ${extension.toUpperCase()} Word 文档，大小约 ${formatBytes(blob.size)}。`
-        : `已导出 ${extension.toUpperCase()} Word 文档，但图片过多，大小约 ${formatBytes(blob.size)}，建议删减图片后再导出。`,
-    !withinLimit || usedFallback,
+    withinLimit
+      ? `已导出 ${extension.toUpperCase()} Word 文档，大小约 ${formatBytes(blob.size)}。`
+      : `已导出 ${extension.toUpperCase()} Word 文档，但图片过多，大小约 ${formatBytes(blob.size)}，建议删减图片后再导出。`,
+    !withinLimit,
   );
 }
 
@@ -1471,18 +1410,10 @@ async function copyFullOutput() {
     if (hasImages) {
       setFileStatus("正在压缩图片并生成公众号富文本，请稍等...");
     }
-    if (previewDirty) {
-      copyOutput.lastMetrics = await copyEditedPreviewSelection(text);
-      copyButton.textContent = "已复制";
-      const risk = getCopyRisk(copyOutput.lastMetrics || { imageCount: 0, totalImageBytes: 0 });
-      setFileStatus(risk.message || "已按当前预览格式复制，可直接粘贴到公众号后台。");
-      window.setTimeout(() => {
-        copyButton.textContent = "复制到公众号";
-      }, 1400);
-      return;
-    }
     const richOutput = await buildRichHtmlOutput();
-    if (window.ClipboardItem && navigator.clipboard?.write) {
+    if (hasImages || previewDirty) {
+      await fallbackCopyHtml(richOutput.html, text);
+    } else if (window.ClipboardItem && navigator.clipboard?.write) {
       const item = new ClipboardItem({
         "text/plain": new Blob([text], { type: "text/plain" }),
         "text/html": new Blob([richOutput.html], { type: "text/html" }),
@@ -1565,8 +1496,7 @@ function isZipBasedOfficeFile(arrayBuffer) {
 
 async function extractDocxArrayBuffer(arrayBuffer) {
   if (!window.mammoth) {
-    const failed = window.__texflowDeps?.mammothFailed;
-    throw new Error(failed ? "Word 解析库加载失败，请检查网络后刷新页面再试。" : "Word 解析库还没有加载完成，请稍后重试。");
+    throw new Error("Word 解析库还没有加载完成，请稍后重试。");
   }
 
   const result = await window.mammoth.convertToHtml(
@@ -1880,7 +1810,6 @@ fileInput.addEventListener("change", async () => {
   const isReadableText = file.type.startsWith("text/") || allowedExtensions.test(file.name);
   const isReadableDocument = readableDocumentExtensions.test(file.name);
   const isReadableImage = file.type.startsWith("image/") || readableImageExtensions.test(file.name);
-  const fileKind = isReadableDocument ? "document" : isReadableImage ? "image" : isReadableText ? "text" : "";
 
   if (!isReadableText && !isReadableDocument && !isReadableImage) {
     setFileStatus("当前支持 TXT、Markdown、TeX、CSV、DOCX、PDF、DOC/WPS（新版内核）、PNG、JPG、WEBP。", true);
@@ -1889,17 +1818,8 @@ fileInput.addEventListener("change", async () => {
   }
 
   try {
-    validateUploadSize(file, fileKind);
-  } catch (error) {
-    setFileStatus(error.message, true);
-    fileInput.value = "";
-    return;
-  }
-
-  try {
     setFileStatus(`正在解析：${file.name}`);
     const text = await extractFileText(file);
-    validateExtractedImageBudget();
     sourceText.value = text || "";
     refresh();
     const assetText = extractedAssets.length ? `，提取 ${extractedAssets.length} 张图片/页面` : "";
