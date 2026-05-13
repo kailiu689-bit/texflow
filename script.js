@@ -78,13 +78,25 @@ const themePresets = {
   contrast: { heading: "stamp", box: "court", body: "compact", image: "frame", divider: "ribbon", palette: "#151a1e" },
 };
 
+const uploadSizeLimits = {
+  text: 2 * 1024 * 1024,
+  document: 50 * 1024 * 1024,
+  image: 8 * 1024 * 1024,
+  extractedImages: 25 * 1024 * 1024,
+};
+
 function getPdfLibrary() {
   if (!pdfLibraryPromise) {
-    pdfLibraryPromise = import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs").then((pdfjsLib) => {
-      pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
-      return pdfjsLib;
-    });
+    pdfLibraryPromise = import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs")
+      .then((pdfjsLib) => {
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+        return pdfjsLib;
+      })
+      .catch(() => {
+        pdfLibraryPromise = null;
+        throw new Error("PDF 解析库加载失败，请检查网络后刷新页面再试。");
+      });
   }
 
   return pdfLibraryPromise;
@@ -116,6 +128,61 @@ function textToSafeParagraphs(text) {
     .filter(Boolean)
     .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
     .join("");
+}
+
+function sanitizeStyleAttribute(styleText) {
+  const allowedStyleProperties = new Set([
+    "background",
+    "background-color",
+    "border",
+    "border-bottom",
+    "border-color",
+    "border-left",
+    "border-radius",
+    "border-right",
+    "border-style",
+    "border-top",
+    "border-width",
+    "color",
+    "display",
+    "font-size",
+    "font-style",
+    "font-weight",
+    "height",
+    "line-height",
+    "margin",
+    "margin-bottom",
+    "margin-left",
+    "margin-right",
+    "margin-top",
+    "max-width",
+    "padding",
+    "padding-bottom",
+    "padding-left",
+    "padding-right",
+    "padding-top",
+    "text-align",
+    "text-decoration",
+    "width",
+  ]);
+
+  return styleText
+    .split(";")
+    .map((rule) => rule.trim())
+    .filter(Boolean)
+    .map((rule) => {
+      const separatorIndex = rule.indexOf(":");
+      if (separatorIndex === -1) return "";
+      const property = rule.slice(0, separatorIndex).trim().toLowerCase();
+      const value = rule.slice(separatorIndex + 1).trim();
+      if (!allowedStyleProperties.has(property)) return "";
+      if (/expression\s*\(|javascript:|vbscript:|data:text|behavior\s*:|-moz-binding|-o-link|url\s*\(/i.test(value)) {
+        return "";
+      }
+      return `${property}:${value}`;
+    })
+    .filter(Boolean)
+    .join(";");
 }
 
 function sanitizePastedHtml(html) {
@@ -171,7 +238,12 @@ function sanitizePastedHtml(html) {
         node.removeAttribute(attribute.name);
       }
       if (name === "style") {
-        node.setAttribute("style", value.replace(/expression\s*\(|url\s*\(\s*javascript:/gi, ""));
+        const safeStyle = sanitizeStyleAttribute(value);
+        if (safeStyle) {
+          node.setAttribute("style", safeStyle);
+        } else {
+          node.removeAttribute("style");
+        }
       }
     });
   });
@@ -591,6 +663,47 @@ function formatBytes(bytes) {
     return `${Math.max(1, Math.round(bytes / 1024))}KB`;
   }
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+}
+
+function getUploadSizeLimit(file, fileKind) {
+  if (fileKind === "text") {
+    return {
+      bytes: uploadSizeLimits.text,
+      label: "纯文本/Markdown",
+    };
+  }
+
+  if (fileKind === "document") {
+    return {
+      bytes: uploadSizeLimits.document,
+      label: /\.(docx|doc|wps)$/i.test(file.name) ? "Word/WPS 文档" : "PDF 文档",
+    };
+  }
+
+  if (fileKind === "image") {
+    return {
+      bytes: uploadSizeLimits.image,
+      label: "单张图片",
+    };
+  }
+
+  return null;
+}
+
+function validateUploadSize(file, fileKind) {
+  const limit = getUploadSizeLimit(file, fileKind);
+  if (!limit || file.size <= limit.bytes) return;
+
+  throw new Error(`${limit.label}不能超过 ${formatBytes(limit.bytes)}，当前文件约 ${formatBytes(file.size)}。`);
+}
+
+function validateExtractedImageBudget() {
+  const totalBytes = extractedAssets.reduce((sum, asset) => sum + dataUrlSize(asset.src || ""), 0);
+  if (totalBytes <= uploadSizeLimits.extractedImages) return;
+
+  extractedAssets = [];
+  importedBlocks = null;
+  throw new Error(`文档内图片约 ${formatBytes(totalBytes)}，超过 ${formatBytes(uploadSizeLimits.extractedImages)}，建议先压缩图片或分批处理。`);
 }
 
 function getCopyRisk(metrics) {
@@ -1238,12 +1351,18 @@ function createWordBlob(html) {
     return {
       blob: window.htmlDocx.asBlob(html),
       extension: "docx",
+      usedFallback: false,
     };
+  }
+
+  if (window.__texflowDeps?.htmlDocxFailed) {
+    setFileStatus("DOCX 导出库加载失败，正在改用 DOC 兼容格式。", true);
   }
 
   return {
     blob: new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" }),
     extension: "doc",
+    usedFallback: true,
   };
 }
 
@@ -1257,17 +1376,19 @@ async function buildWordBlobUnderLimit() {
 
   let lastBlob = null;
   let lastExtension = "docx";
+  let lastUsedFallback = false;
   for (const plan of plans) {
     const html = await buildWordHtml(plan);
-    const { blob, extension } = createWordBlob(html);
+    const { blob, extension, usedFallback } = createWordBlob(html);
     lastBlob = blob;
     lastExtension = extension;
+    lastUsedFallback = usedFallback;
     if (blob.size < limit) {
-      return { blob, extension, withinLimit: true };
+      return { blob, extension, withinLimit: true, usedFallback };
     }
   }
 
-  return { blob: lastBlob, extension: lastExtension, withinLimit: false };
+  return { blob: lastBlob, extension: lastExtension, withinLimit: false, usedFallback: lastUsedFallback };
 }
 
 async function exportWordDocument() {
@@ -1278,7 +1399,7 @@ async function exportWordDocument() {
   }
 
   setFileStatus("正在生成小于 15MB 的 Word 文档...");
-  const { blob, extension, withinLimit } = await buildWordBlobUnderLimit();
+  const { blob, extension, withinLimit, usedFallback } = await buildWordBlobUnderLimit();
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -1287,10 +1408,12 @@ async function exportWordDocument() {
   URL.revokeObjectURL(url);
 
   setFileStatus(
-    withinLimit
-      ? `已导出 ${extension.toUpperCase()} Word 文档，大小约 ${formatBytes(blob.size)}。`
-      : `已导出 ${extension.toUpperCase()} Word 文档，但图片过多，大小约 ${formatBytes(blob.size)}，建议删减图片后再导出。`,
-    !withinLimit,
+    usedFallback
+      ? `DOCX 导出库未加载，已改用 DOC 兼容格式，大小约 ${formatBytes(blob.size)}。`
+      : withinLimit
+        ? `已导出 ${extension.toUpperCase()} Word 文档，大小约 ${formatBytes(blob.size)}。`
+        : `已导出 ${extension.toUpperCase()} Word 文档，但图片过多，大小约 ${formatBytes(blob.size)}，建议删减图片后再导出。`,
+    !withinLimit || usedFallback,
   );
 }
 
@@ -1418,7 +1541,8 @@ function isZipBasedOfficeFile(arrayBuffer) {
 
 async function extractDocxArrayBuffer(arrayBuffer) {
   if (!window.mammoth) {
-    throw new Error("Word 解析库还没有加载完成，请稍后重试。");
+    const failed = window.__texflowDeps?.mammothFailed;
+    throw new Error(failed ? "Word 解析库加载失败，请检查网络后刷新页面再试。" : "Word 解析库还没有加载完成，请稍后重试。");
   }
 
   const result = await window.mammoth.convertToHtml(
@@ -1732,6 +1856,7 @@ fileInput.addEventListener("change", async () => {
   const isReadableText = file.type.startsWith("text/") || allowedExtensions.test(file.name);
   const isReadableDocument = readableDocumentExtensions.test(file.name);
   const isReadableImage = file.type.startsWith("image/") || readableImageExtensions.test(file.name);
+  const fileKind = isReadableDocument ? "document" : isReadableImage ? "image" : isReadableText ? "text" : "";
 
   if (!isReadableText && !isReadableDocument && !isReadableImage) {
     setFileStatus("当前支持 TXT、Markdown、TeX、CSV、DOCX、PDF、DOC/WPS（新版内核）、PNG、JPG、WEBP。", true);
@@ -1740,8 +1865,17 @@ fileInput.addEventListener("change", async () => {
   }
 
   try {
+    validateUploadSize(file, fileKind);
+  } catch (error) {
+    setFileStatus(error.message, true);
+    fileInput.value = "";
+    return;
+  }
+
+  try {
     setFileStatus(`正在解析：${file.name}`);
     const text = await extractFileText(file);
+    validateExtractedImageBudget();
     sourceText.value = text || "";
     refresh();
     const assetText = extractedAssets.length ? `，提取 ${extractedAssets.length} 张图片/页面` : "";
