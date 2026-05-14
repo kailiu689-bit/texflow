@@ -21,7 +21,9 @@
       href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23004038"/><path fill="white" d="M18 17h28v9H36v22h-8V26H18z"/></svg>'
     />
     <link rel="canonical" href="https://kailiu689-bit.github.io/texflow/" />
-    <link rel="stylesheet" href="./styles.css?v=20260512-clean" />
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+    <link rel="stylesheet" href="./styles.css?v=20260513-polish" />
   </head>
   <body>
     <header class="topbar">
@@ -37,7 +39,7 @@
         <div class="editor-heading">
           <div>
             <p class="eyebrow">WECHAT ARTICLE TYPESETTING</p>
-            <h2>公众号排版工作台</h2>
+            <h1>公众号排版工作台</h1>
           </div>
         </div>
 
@@ -270,8 +272,16 @@
       </section>
     </main>
 
-    <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js" defer></script>
-    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js" defer></script>
-    <script src="./script.js?v=20260512-clean" type="module"></script>
+    <script
+      src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"
+      defer
+      onerror="window.__texflowDeps=window.__texflowDeps||{};window.__texflowDeps.mammothFailed=true;"
+    ></script>
+    <script
+      src="https://unpkg.com/html-docx-js/dist/html-docx.js"
+      defer
+      onerror="window.__texflowDeps=window.__texflowDeps||{};window.__texflowDeps.htmlDocxFailed=true;"
+    ></script>
+    <script src="./script.js?v=20260513-copyfix" type="module"></script>
   </body>
 </html>

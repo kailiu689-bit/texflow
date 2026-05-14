@@ -118,6 +118,85 @@ function textToSafeParagraphs(text) {
     .join("");
 }
 
+function sanitizeStyleAttribute(styleText) {
+  const allowedStyleProperties = new Set([
+    "background",
+    "background-color",
+    "border",
+    "border-bottom",
+    "border-color",
+    "border-left",
+    "border-radius",
+    "border-right",
+    "border-style",
+    "border-top",
+    "border-width",
+    "color",
+    "display",
+    "font-size",
+    "font-style",
+    "font-weight",
+    "height",
+    "line-height",
+    "margin",
+    "margin-bottom",
+    "margin-left",
+    "margin-right",
+    "margin-top",
+    "max-width",
+    "padding",
+    "padding-bottom",
+    "padding-left",
+    "padding-right",
+    "padding-top",
+    "text-align",
+    "text-decoration",
+    "width",
+  ]);
+
+  return styleText
+    .split(";")
+    .map((rule) => rule.trim())
+    .filter(Boolean)
+    .map((rule) => {
+      const separatorIndex = rule.indexOf(":");
+      if (separatorIndex === -1) return "";
+      const property = rule.slice(0, separatorIndex).trim().toLowerCase();
+      const value = rule.slice(separatorIndex + 1).trim();
+      const normalizedValue = value.replace(/[\u0000-\u001f\u007f\s]+/g, "").toLowerCase();
+      if (!allowedStyleProperties.has(property)) return "";
+      if (
+        /expression\s*\(|behavior\s*:|-moz-binding|-o-link|u\s*r\s*l\s*\(/i.test(value) ||
+        normalizedValue.includes("javascript:") ||
+        normalizedValue.includes("vbscript:") ||
+        normalizedValue.includes("data:text")
+      ) {
+        return "";
+      }
+      return `${property}:${value}`;
+    })
+    .filter(Boolean)
+    .join(";");
+}
+
+function isSafePastedUrl(value, attributeName) {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const normalized = trimmed.replace(/[\u0000-\u001f\u007f\s]+/g, "").toLowerCase();
+  if (/^(javascript|vbscript|file|data:text):/.test(normalized)) return false;
+
+  if (attributeName === "src") {
+    return (
+      /^https?:\/\//i.test(trimmed) ||
+      /^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,/i.test(trimmed) ||
+      /^\/(?!\/)/.test(trimmed) ||
+      /^\.\.?\//.test(trimmed)
+    );
+  }
+
+  return /^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed) || /^tel:/i.test(trimmed) || /^#/.test(trimmed) || /^\/(?!\/)/.test(trimmed) || /^\.\.?\//.test(trimmed);
+}
+
 function sanitizePastedHtml(html) {
   const holder = document.createElement("div");
   holder.innerHTML = html;
@@ -167,7 +246,7 @@ function sanitizePastedHtml(html) {
         node.removeAttribute(attribute.name);
         return;
       }
-      if ((name === "href" || name === "src") && /^(javascript|data:text|vbscript):/i.test(value)) {
+      if ((name === "href" || name === "src") && !isSafePastedUrl(value, name)) {
         node.removeAttribute(attribute.name);
       }
       if (name === "style") {
@@ -644,6 +723,13 @@ async function compressImageForWechat(asset, options = {}) {
   return { src: output, bytes: dataUrlSize(output) };
 }
 
+const copyImageOptions = {
+  maxWidth: 720,
+  targetBytes: 360 * 1024,
+  quality: 0.74,
+  minQuality: 0.36,
+};
+
 function formatBytes(bytes) {
   if (bytes < 1024 * 1024) {
     return `${Math.max(1, Math.round(bytes / 1024))}KB`;
@@ -776,7 +862,7 @@ async function buildRichHtmlOutput() {
       if (block.type === "image") {
         try {
           const alt = escapeHtml(block.asset.alt || "文档图片");
-          const compressed = await compressImageForWechat(block.asset);
+          const compressed = await compressImageForWechat(block.asset, copyImageOptions);
           metrics.imageCount += 1;
           metrics.totalImageBytes += compressed.bytes || 0;
           blocksHtmlParts.push(`
@@ -871,7 +957,7 @@ async function buildEditedPreviewHtmlOutput() {
   for (const image of images) {
     if (!image.src) continue;
     try {
-      const compressed = await compressImageForWechat({ src: image.src });
+      const compressed = await compressImageForWechat({ src: image.src }, copyImageOptions);
       image.src = compressed.src;
       image.setAttribute("style", `${image.getAttribute("style") || ""};display:block;max-width:100%;height:auto;`);
       metrics.imageCount += 1;
@@ -1382,18 +1468,10 @@ async function copyFullOutput() {
     if (hasImages) {
       setFileStatus("正在压缩图片并生成公众号富文本，请稍等...");
     }
-    if (previewDirty) {
-      copyOutput.lastMetrics = await copyEditedPreviewSelection(text);
-      copyButton.textContent = "已复制";
-      const risk = getCopyRisk(copyOutput.lastMetrics || { imageCount: 0, totalImageBytes: 0 });
-      setFileStatus(risk.message || "已按当前预览格式复制，可直接粘贴到公众号后台。");
-      window.setTimeout(() => {
-        copyButton.textContent = "复制到公众号";
-      }, 1400);
-      return;
-    }
     const richOutput = await buildRichHtmlOutput();
-    if (window.ClipboardItem && navigator.clipboard?.write) {
+    if (hasImages || previewDirty) {
+      await fallbackCopyHtml(richOutput.html, text);
+    } else if (window.ClipboardItem && navigator.clipboard?.write) {
       const item = new ClipboardItem({
         "text/plain": new Blob([text], { type: "text/plain" }),
         "text/html": new Blob([richOutput.html], { type: "text/html" }),
