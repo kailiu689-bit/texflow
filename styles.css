@@ -1973,6 +1973,10 @@ body {
   cursor: pointer;
 }
 
+.format-button.text-box-tool {
+  min-width: 56px;
+}
+
 .format-button:hover,
 .format-picker select:hover {
   background: var(--control-hover);

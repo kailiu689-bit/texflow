@@ -492,6 +492,64 @@ function runFormatCommand(command, value = null) {
   markPreviewEdited();
 }
 
+function getPreviewSelectionRange() {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return null;
+
+  const range = selection.getRangeAt(0);
+  const container = range.commonAncestorContainer.nodeType === Node.TEXT_NODE
+    ? range.commonAncestorContainer.parentElement
+    : range.commonAncestorContainer;
+
+  return preview.contains(container) ? range : null;
+}
+
+function placeCaretInside(node) {
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function getClosestPreviewBlock(node) {
+  const element = node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+  return element?.closest?.("p,h2,aside,figure,hr");
+}
+
+function insertPreviewTextBox() {
+  const range = getPreviewSelectionRange();
+  const selectedText = range?.toString().trim() || "在这里输入文本框内容";
+  const textBox = document.createElement("aside");
+  const title = document.createElement("span");
+  const body = document.createElement("p");
+
+  textBox.className = "text-box";
+  textBox.dataset.index = String(preview.querySelectorAll(".text-box").length + 1);
+  title.textContent = "重点";
+  body.textContent = selectedText;
+  textBox.append(title, body);
+
+  if (range) {
+    const anchorBlock = getClosestPreviewBlock(range.commonAncestorContainer);
+    range.deleteContents();
+    if (anchorBlock && anchorBlock.parentElement === preview) {
+      anchorBlock.after(textBox);
+      if (!anchorBlock.textContent.trim()) anchorBlock.remove();
+    } else {
+      range.insertNode(textBox);
+    }
+  } else {
+    preview.appendChild(textBox);
+  }
+
+  placeCaretInside(body);
+  markPreviewEdited("已在预览中插入文本框。");
+}
+
 function buildMarkdownOutput(headingPrefix = "##") {
   if (previewDirty) {
     return preview.innerText.trim();
@@ -1703,7 +1761,19 @@ exportMdButton.addEventListener("click", () => {
   }
 });
 
+formatToolbar.addEventListener("mousedown", (event) => {
+  if (event.target.closest("[data-command], [data-action]")) {
+    event.preventDefault();
+  }
+});
+
 formatToolbar.addEventListener("click", (event) => {
+  const actionButton = event.target.closest("[data-action]");
+  if (actionButton?.dataset.action === "insertTextBox") {
+    insertPreviewTextBox();
+    return;
+  }
+
   const button = event.target.closest("[data-command]");
   if (!button) return;
 
