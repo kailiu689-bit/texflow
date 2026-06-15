@@ -580,9 +580,33 @@ function focusPreviewForCommand() {
 }
 
 function runFormatCommand(command, value = null) {
+  const selectedHeading = getSelectedPreviewHeading();
   focusPreviewForCommand();
   document.execCommand(command, false, value);
+  const headingAlignment = {
+    justifyLeft: "left",
+    justifyCenter: "center",
+    justifyRight: "right",
+  }[command];
+  if (selectedHeading && headingAlignment) {
+    selectedHeading.dataset.headingAlign = headingAlignment;
+  }
   markPreviewEdited();
+}
+
+function getSelectedPreviewHeading() {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return null;
+  const node = selection.getRangeAt(0).commonAncestorContainer;
+  const element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+  const heading = element?.closest?.("h2");
+  return heading && preview.contains(heading) ? heading : null;
+}
+
+function getHeadingLineMargin(alignment) {
+  if (alignment === "left") return "12px auto 0 0";
+  if (alignment === "right") return "12px 0 0 auto";
+  return "12px auto 0";
 }
 
 function getPreviewSelectionRange() {
@@ -930,7 +954,7 @@ async function buildRichHtmlOutput() {
           heading,
         ].join(";");
 
-        const afterLine = `<div style="width:38px;height:3px;background:#d4472f;margin:12px 0 0;border-radius:999px;"></div>`;
+        const afterLine = `<div style="width:38px;height:3px;background:#d4472f;margin:${getHeadingLineMargin("center")};border-radius:999px;"></div>`;
 
         const indexBadge =
           headingStyleSelect.value === "numbered"
@@ -960,12 +984,18 @@ async function buildEditedPreviewHtmlOutput() {
   const clone = preview.cloneNode(true);
   clone.removeAttribute("contenteditable");
 
-  clone.querySelectorAll("h2").forEach((heading) => {
+  const originalHeadings = Array.from(preview.querySelectorAll("h2"));
+  clone.querySelectorAll("h2").forEach((heading, index) => {
+    const originalHeading = originalHeadings[index];
+    const alignment =
+      originalHeading?.dataset.headingAlign ||
+      (originalHeading ? window.getComputedStyle(originalHeading).textAlign : "center") ||
+      "center";
     const line = document.createElement("div");
     line.setAttribute("data-texflow-heading-line", "true");
     line.setAttribute(
       "style",
-      "display:block;width:38px;height:3px;margin:12px 0 0;background:#d4472f;border-radius:999px;",
+      `display:block;width:38px;height:3px;margin:${getHeadingLineMargin(alignment)};background:#d4472f;border-radius:999px;`,
     );
     heading.appendChild(line);
   });

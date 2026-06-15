@@ -1002,9 +1002,24 @@ textarea {
   display: block;
   width: 38px;
   height: 3px;
-  margin: 12px 0 0;
+  margin: 12px auto 0;
   background: var(--red);
   content: "";
+}
+
+.preview.wechat h2[data-heading-align="left"]::after {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.preview.wechat h2[data-heading-align="center"]::after {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.preview.wechat h2[data-heading-align="right"]::after {
+  margin-right: 0;
+  margin-left: auto;
 }
 
 .preview.paper {
