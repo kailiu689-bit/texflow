@@ -283,6 +283,18 @@ function shouldHighlight(sentence) {
   return /结论|建议|重点|风险|必须|应该|核心|关键|下一步|最后|因此|争议|问题|答案|提醒|注意|焦点/.test(sentence);
 }
 
+function getPaletteTint(color = activePalette) {
+  const tints = {
+    "#004038": "#d9e6e4",
+    "#00544c": "#d9e8e6",
+    "#2f69ff": "#dce6ff",
+    "#151a1e": "#dedfe0",
+    "#ad4f43": "#f0e2df",
+    "#d4472f": "#f6dfda",
+  };
+  return tints[color.toLowerCase()] || "#e7eefc";
+}
+
 function shouldAutoBox(block, index, blocks) {
   if (boxStyleSelect.value === "none" || block.type !== "paragraph") return false;
   const text = block.text || "";
@@ -414,7 +426,9 @@ function renderTextBlock(block) {
     return `<h2 data-index="${String(headingIndex).padStart(2, "0")}">${safeText}</h2>`;
   }
 
-  const highlighted = highlightToggle.checked && shouldHighlight(block.text) ? `<strong>${safeText}</strong>` : safeText;
+  const highlighted = highlightToggle.checked && shouldHighlight(block.text)
+    ? `<strong data-texflow-highlight="true">${safeText}</strong>`
+    : safeText;
 
   return `<p>${highlighted}</p>`;
 }
@@ -916,7 +930,7 @@ async function buildRichHtmlOutput() {
           heading,
         ].join(";");
 
-        const afterLine = `<div style="width:38px;height:3px;background:${headingColor};margin:12px auto 0;border-radius:999px;"></div>`;
+        const afterLine = `<div style="width:38px;height:3px;background:#d4472f;margin:12px 0 0;border-radius:999px;"></div>`;
 
         const indexBadge =
           headingStyleSelect.value === "numbered"
@@ -929,10 +943,10 @@ async function buildRichHtmlOutput() {
       const paragraphText = escapeHtml(stripMarkdownMarkers(block.text));
       const highlighted = highlightToggle.checked && shouldHighlight(block.text);
       const weight = highlighted ? 700 : 400;
-      const highlightStyle = highlighted
-        ? `color:${activePalette};text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;`
-        : "";
-      blocksHtmlParts.push(`<p style="margin:0 0 18px;font-size:${fontSize}px;line-height:${lineHeight};font-weight:${weight};color:${bodyColor};${paragraph};${highlightStyle}">${paragraphText}</p>`);
+      const paragraphContent = highlighted
+        ? `<span style="color:${activePalette};background-color:${getPaletteTint()};font-weight:700;text-decoration:underline;text-decoration-color:${activePalette};text-decoration-thickness:2px;text-underline-offset:4px;">${paragraphText}</span>`
+        : paragraphText;
+      blocksHtmlParts.push(`<p style="margin:0 0 18px;font-size:${fontSize}px;line-height:${lineHeight};font-weight:${weight};color:${bodyColor};${paragraph};">${paragraphContent}</p>`);
   }
   const blocksHtml = blocksHtmlParts.join("");
 
@@ -945,6 +959,17 @@ async function buildRichHtmlOutput() {
 async function buildEditedPreviewHtmlOutput() {
   const clone = preview.cloneNode(true);
   clone.removeAttribute("contenteditable");
+
+  clone.querySelectorAll("h2").forEach((heading) => {
+    const line = document.createElement("div");
+    line.setAttribute("data-texflow-heading-line", "true");
+    line.setAttribute(
+      "style",
+      "display:block;width:38px;height:3px;margin:12px 0 0;background:#d4472f;border-radius:999px;",
+    );
+    heading.appendChild(line);
+  });
+
   inlineComputedStyles(clone);
 
   const metrics = {
@@ -977,6 +1002,16 @@ function sanitizeWechatHtml(html) {
   const holder = document.createElement("div");
   holder.innerHTML = html;
 
+  holder.querySelectorAll('[data-texflow-highlight="true"]').forEach((node) => {
+    node.style.color = activePalette;
+    node.style.background = "none";
+    node.style.backgroundColor = getPaletteTint();
+    node.style.fontWeight = "700";
+    node.style.textDecoration = "underline";
+    node.style.textDecorationColor = activePalette;
+    node.removeAttribute("data-texflow-highlight");
+  });
+
   holder.querySelectorAll("aside").forEach((node) => {
     const title = escapeHtml(node.querySelector("span")?.innerText.trim() || "重点");
     const text = escapeHtml(node.querySelector("p")?.innerText.trim() || "");
@@ -987,12 +1022,13 @@ function sanitizeWechatHtml(html) {
     node.replaceWith(replacement);
   });
 
-  holder.querySelectorAll("[data-texflow-copy], [contenteditable], script, style").forEach((node) => {
+  holder.querySelectorAll("[data-texflow-copy], [data-texflow-heading-line], [contenteditable], script, style").forEach((node) => {
     if (node.matches("script, style")) {
       node.remove();
       return;
     }
     node.removeAttribute("data-texflow-copy");
+    node.removeAttribute("data-texflow-heading-line");
     node.removeAttribute("contenteditable");
   });
 
