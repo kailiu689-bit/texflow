@@ -603,10 +603,9 @@ function getSelectedPreviewHeading() {
   return heading && preview.contains(heading) ? heading : null;
 }
 
-function getHeadingLineMargin(alignment) {
-  if (alignment === "left") return "12px auto 0 0";
-  if (alignment === "right") return "12px 0 0 auto";
-  return "12px auto 0";
+function renderHeadingLineHtml(alignment = "center") {
+  const textAlign = ["left", "right"].includes(alignment) ? alignment : "center";
+  return `<span data-texflow-heading-line="true" style="display:block;width:100%;margin:12px 0 0;text-align:${textAlign};font-size:0;line-height:0;"><span style="display:inline-block;width:38px;height:3px;overflow:hidden;background-color:#d4472f;border-radius:999px;font-size:0;line-height:0;">&nbsp;</span></span>`;
 }
 
 function getPreviewSelectionRange() {
@@ -954,13 +953,13 @@ async function buildRichHtmlOutput() {
           heading,
         ].join(";");
 
-        const afterLine = `<div style="width:38px;height:3px;background:#d4472f;margin:${getHeadingLineMargin("center")};border-radius:999px;"></div>`;
+        const afterLine = renderHeadingLineHtml("center");
 
         const indexBadge =
           headingStyleSelect.value === "numbered"
             ? `<span style="font-size:13px;margin-right:8px;color:${activePalette};">#${String(copyHeadingIndex).padStart(2, "0")}</span>`
             : "";
-        blocksHtmlParts.push(`<div style="margin:0;"><p style="${titleStyle}">${indexBadge}${headingText}</p>${afterLine}</div>`);
+        blocksHtmlParts.push(`<div style="margin:0;"><p style="${titleStyle}">${indexBadge}${headingText}${afterLine}</p></div>`);
         continue;
       }
 
@@ -991,13 +990,9 @@ async function buildEditedPreviewHtmlOutput() {
       originalHeading?.dataset.headingAlign ||
       (originalHeading ? window.getComputedStyle(originalHeading).textAlign : "center") ||
       "center";
-    const line = document.createElement("div");
-    line.setAttribute("data-texflow-heading-line", "true");
-    line.setAttribute(
-      "style",
-      `display:block;width:38px;height:3px;margin:${getHeadingLineMargin(alignment)};background:#d4472f;border-radius:999px;`,
-    );
-    heading.appendChild(line);
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = renderHeadingLineHtml(alignment);
+    heading.appendChild(wrapper.firstElementChild);
   });
 
   inlineComputedStyles(clone);
