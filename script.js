@@ -299,15 +299,19 @@ function getPaletteTint(color = activePalette) {
 function shouldAutoBox(block, index, blocks) {
   if (boxStyleSelect.value === "none" || block.type !== "paragraph") return false;
   const text = block.text || "";
+  const firstParagraphIndex = blocks.findIndex((item) => item.type === "paragraph");
 
-  if (/^(这场|本案|核心|关键|焦点|争议|提醒|注意)/.test(text) && text.length <= 140) return true;
+  if (index === firstParagraphIndex && text.length >= 42 && text.length <= 160) return true;
+  if (/^(核心|关键|焦点|争议|提醒|注意|建议|下一步)/.test(text) && text.length <= 140) return true;
   return false;
 }
 
-function getAutoBoxTitle(text, index) {
-  if (/争议|问题|答案|焦点/.test(text)) return "重点";
+function getAutoBoxTitle(text, index, blocks) {
+  const firstParagraphIndex = blocks.findIndex((item) => item.type === "paragraph");
+  if (index === firstParagraphIndex) return "导语";
+  if (/核心|关键|争议|问题|答案|焦点/.test(text)) return "重点";
   if (/建议|下一步|提醒|注意/.test(text)) return "提示";
-  return "导语";
+  return "重点";
 }
 
 function isCalloutLine(line) {
@@ -516,7 +520,7 @@ function withAutoBoxes(blocks) {
       autoBoxCount += 1;
       output.push({
         type: "callout",
-        title: getAutoBoxTitle(block.text, index),
+        title: getAutoBoxTitle(block.text, index, blocks),
         text: block.text,
         auto: true,
       });
