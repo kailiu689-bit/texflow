@@ -275,6 +275,7 @@ function isHeading(line) {
     /^#{1,6}\s+/.test(line) ||
     /^(\d+\.|[一二三四五六七八九十]+[、.．]|第[一二三四五六七八九十\d]+[章节])/.test(line) ||
     (/[:：]$/.test(line) && line.length <= 28) ||
+    (/[:：]/.test(line) && line.length <= 36 && !/[。！？!?；;]/.test(line)) ||
     (line.length <= 18 && !/[。！？!?]/.test(line))
   );
 }
@@ -1621,6 +1622,16 @@ async function extractDocxArrayBuffer(arrayBuffer) {
   const result = await window.mammoth.convertToHtml(
     { arrayBuffer },
     {
+      styleMap: [
+        "p[style-name='Title'] => h1:fresh",
+        "p[style-name='Subtitle'] => h2:fresh",
+        "p[style-name='heading 1'] => h2:fresh",
+        "p[style-name='heading 2'] => h3:fresh",
+        "p[style-name='heading 3'] => h3:fresh",
+        "p[style-name='heading 4'] => h4:fresh",
+        "p[style-name='heading 5'] => h4:fresh",
+        "p[style-name='heading 6'] => h4:fresh",
+      ],
       convertImage: window.mammoth.images.imgElement(async (image) => {
         const base64 = await image.read("base64");
         return { src: `data:${image.contentType};base64,${base64}` };
@@ -1662,14 +1673,12 @@ function parseDocxHtml(container) {
     blocks.push(...formatText(cleanText));
   }
 
-  function walk(node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      pushText(node.textContent || "");
-      return;
-    }
+  function pushHeading(text) {
+    const cleanText = sanitizeLine(text);
+    if (cleanText) blocks.push({ type: "heading", text: cleanText });
+  }
 
-    if (node.nodeType !== Node.ELEMENT_NODE) return;
-
+  function pushImage(node) {
     if (node.tagName === "IMG") {
       imageCount += 1;
       const asset = {
@@ -1680,11 +1689,45 @@ function parseDocxHtml(container) {
       blocks.push({ type: "image", asset });
       return;
     }
+  }
 
-    const childNodes = Array.from(node.childNodes);
-    if (!childNodes.length) return;
+  function walk(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      pushText(node.textContent || "");
+      return;
+    }
 
-    childNodes.forEach(walk);
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+    if (node.tagName === "IMG") {
+      pushImage(node);
+      return;
+    }
+
+    const images = Array.from(node.children).filter((child) => child.tagName === "IMG");
+    if (images.length && !node.textContent.trim()) {
+      images.forEach(pushImage);
+      return;
+    }
+
+    const text = node.textContent || "";
+    if (/^H[1-6]$/.test(node.tagName)) {
+      pushHeading(text);
+      return;
+    }
+
+    if (["P", "LI", "BLOCKQUOTE"].includes(node.tagName)) {
+      const cleanText = text.replace(/\s+/g, " ").trim();
+      if (isHeading(cleanText)) {
+        pushHeading(cleanText.replace(/^(\d+\.|[一二三四五六七八九十]+[、.．])\s*/, ""));
+      } else {
+        pushText(cleanText);
+      }
+      Array.from(node.querySelectorAll("img")).forEach(pushImage);
+      return;
+    }
+
+    Array.from(node.childNodes).forEach(walk);
   }
 
   Array.from(container.childNodes).forEach(walk);
