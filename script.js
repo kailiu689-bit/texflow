@@ -310,24 +310,6 @@ function getAutoBoxTitle(text, index) {
   return "导语";
 }
 
-function isIntroCallout(block) {
-  return block.type === "callout" && /导语|摘要|编者按|核心提示/.test(block.title || "");
-}
-
-function buildAutoIntro(blocks) {
-  const paragraphTexts = blocks
-    .filter((block) => block.type === "paragraph")
-    .slice(0, 2)
-    .map((block) => stripMarkdownMarkers(block.text || ""))
-    .filter(Boolean);
-  const sentences = splitSentences(paragraphTexts.join(""));
-  if (!sentences.length) return "";
-
-  let intro = sentences[0];
-  if (intro.length < 60 && sentences[1]) intro += sentences[1];
-  return intro.length > 150 ? `${intro.slice(0, 148)}……` : intro;
-}
-
 function isCalloutLine(line) {
   return /^【?(摘要|导语|编者按|核心提示|温馨提示|活动概况|提示|说明)】?[：:｜|]/.test(line);
 }
@@ -526,18 +508,10 @@ function withDividers(blocks) {
 }
 
 function withAutoBoxes(blocks) {
-  const hasIntro = blocks.some(isIntroCallout);
-  const firstParagraphIndex = blocks.findIndex((block) => block.type === "paragraph");
-  const autoIntro = !hasIntro && firstParagraphIndex !== -1 ? buildAutoIntro(blocks) : "";
   let autoBoxCount = 0;
   const output = [];
 
   blocks.forEach((block, index) => {
-    if (index === firstParagraphIndex && autoIntro && boxStyleSelect.value !== "none") {
-      output.push({ type: "callout", title: "导语", text: autoIntro, auto: true });
-      autoBoxCount += 1;
-    }
-
     if (autoBoxCount < 2 && shouldAutoBox(block, index, blocks)) {
       autoBoxCount += 1;
       output.push({
