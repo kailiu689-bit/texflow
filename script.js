@@ -299,8 +299,9 @@ function getPaletteTint(color = activePalette) {
 function shouldAutoBox(block, index, blocks) {
   if (boxStyleSelect.value === "none" || block.type !== "paragraph") return false;
   const text = block.text || "";
+  const firstParagraphIndex = blocks.findIndex((item) => item.type === "paragraph");
 
-  if (index <= 2 && text.length >= 42 && text.length <= 160) return true;
+  if (index === firstParagraphIndex && text.length >= 42 && text.length <= 160) return true;
   if (/^(这场|本案|核心|关键|焦点|争议|提醒|注意)/.test(text) && text.length <= 140) return true;
   return false;
 }
