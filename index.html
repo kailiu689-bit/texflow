@@ -21,9 +21,7 @@
       href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23004038"/><path fill="white" d="M18 17h28v9H36v22h-8V26H18z"/></svg>'
     />
     <link rel="canonical" href="https://kailiu689-bit.github.io/texflow/" />
-    <link rel="preconnect" href="https://unpkg.com" />
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
-    <link rel="stylesheet" href="./styles.css?v=20260615-heading-line-copy" />
+    <link rel="stylesheet" href="./styles.css?v=20261012-web-upgrade" />
   </head>
   <body>
     <header class="topbar">
@@ -31,7 +29,7 @@
         <span class="brand-mark">T</span>
         <span>TeXflow</span>
       </a>
-      <span class="topbar-note">公众号排版工作台</span>
+      <span class="topbar-note">公众号排版工作台 <span class="version-tag">2026.10</span></span>
     </header>
 
     <main>
@@ -62,6 +60,8 @@
             </label>
             <button class="ghost-button compact" type="button" id="insertBoxButton">插入文本框</button>
             <button class="ghost-button compact" type="button" id="loadDemo">示例文本</button>
+            <button class="ghost-button compact" type="button" id="saveDraftButton">保存草稿</button>
+            <span id="draftStatus" class="draft-status" role="status">本机自动保存</span>
             <button class="ghost-button compact" type="button" id="fullscreenButton">专注预览</button>
           </div>
         </div>
@@ -164,7 +164,7 @@
                 <label>
                   <span>字体</span>
                   <select id="fontFamilySelect">
-                    <option value="serif">常规黑体</option>
+                    <option value="serif">书刊衬线</option>
                     <option value="song">宋体正文</option>
                     <option value="hei">现代黑体</option>
                     <option value="kai">楷体温润</option>
@@ -187,6 +187,8 @@
                     <option value="2.3">宽松（2.3X）</option>
                   </select>
                 </label>
+                  <label><span>段间距</span><select id="paragraphGapSelect"><option value="12">紧凑 · 12px</option><option value="18" selected>适中 · 18px</option><option value="24">舒展 · 24px</option></select></label>
+                  <label><span>正文边距</span><select id="pagePaddingSelect"><option value="16">窄 · 16px</option><option value="24" selected>适中 · 24px</option><option value="32">宽 · 32px</option></select></label>
                 </div>
               </details>
             </section>
@@ -215,11 +217,21 @@
                   <button class="toc-button" type="button" id="tocButton">目录</button>
                   <strong>公众号预览 · 可编辑 <small id="previewState">待排版</small></strong>
                   <div class="export-actions">
+                    <button class="export-button" type="button" id="phonePreviewButton" aria-pressed="false">手机预览</button>
                     <button class="export-button" type="button" id="exportMdButton">导出 MD</button>
                     <button class="export-button" type="button" id="exportButton">导出 DOCX</button>
                   </div>
                 </div>
                 <div class="format-toolbar" aria-label="预览编辑工具">
+                  <button class="format-button" type="button" id="undoButton" title="撤销（Ctrl/⌘ Z）" disabled>撤销</button>
+                  <button class="format-button" type="button" id="redoButton" title="重做（Ctrl/⌘ Shift Z）" disabled>重做</button>
+                  <button class="format-button" type="button" data-action="heading">标题</button>
+                  <button class="format-button" type="button" data-action="paragraph">正文</button>
+                  <button class="format-button" type="button" data-action="image">插图</button>
+                  <input id="previewImageInput" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden />
+                  <button class="format-button block-tool" type="button" data-action="moveUp" disabled>上移</button>
+                  <button class="format-button block-tool" type="button" data-action="moveDown" disabled>下移</button>
+                  <button class="format-button block-tool" type="button" data-action="deleteBlock" disabled>删除块</button>
                   <button class="format-button" type="button" data-command="bold" title="加粗">B</button>
                   <button class="format-button italic" type="button" data-command="italic" title="斜体">I</button>
                   <button class="format-button underline" type="button" data-command="underline" title="下划线">U</button>
@@ -273,15 +285,16 @@
     </main>
 
     <script
-      src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"
+      src="./vendor/mammoth.browser.min.js"
       defer
       onerror="window.__texflowDeps=window.__texflowDeps||{};window.__texflowDeps.mammothFailed=true;"
     ></script>
     <script
-      src="https://unpkg.com/html-docx-js/dist/html-docx.js"
+      src="./vendor/html-docx.js"
       defer
       onerror="window.__texflowDeps=window.__texflowDeps||{};window.__texflowDeps.htmlDocxFailed=true;"
     ></script>
-    <script src="./script.js?v=20260616-first-intro" defer></script>
+    <script src="./script.js?v=20261012-web-upgrade" defer></script>
+    <script src="./workspace.js?v=20261012-web-upgrade" defer></script>
   </body>
 </html>
