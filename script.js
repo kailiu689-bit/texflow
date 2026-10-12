@@ -847,6 +847,7 @@ async function buildRichHtmlOutput() {
 async function buildEditedPreviewHtmlOutput(nodes = Array.from(preview.children), imageOptions = copyImageOptions) {
   const clone = document.createElement("div");
   for (const node of nodes) {
+    if (window.getComputedStyle(node).display === "none") continue;
     const copy = node.cloneNode(true);
     inlineComputedStyles(copy, node);
     copy.querySelectorAll("h2").forEach((heading) => heading.appendChild(createHeadingLine(heading)));
@@ -1676,6 +1677,14 @@ function applyDesignSettings() {
   resultPane.style.setProperty("--page-padding", `${pagePaddingSelect.value}px`);
   if (previewDirty) {
     applyPreviewClasses();
+    preview.querySelectorAll(".section-divider").forEach((node) => node.remove());
+    if (dividerStyleSelect.value !== "none") {
+      Array.from(preview.querySelectorAll(":scope > h2")).slice(1).forEach((heading) => {
+        const divider = document.createElement("hr");
+        divider.className = "section-divider";
+        heading.before(divider);
+      });
+    }
     renderToc(formattedBlocks);
   } else {
     renderPreview(formattedBlocks);

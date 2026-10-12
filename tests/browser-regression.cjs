@@ -60,6 +60,16 @@ async function check(name, fn) {
     assert.deepEqual(computed, { fontSize: '20px', padding: '32px', gap: '24px' });
     assert.equal(await page.locator('#preview').innerText(), before);
   });
+  await check('edited-divider-toggle', async (page) => {
+    await page.locator('#sourceText').fill(sample + '\n# 第二节\n这是第二节中需要保留的正文，不应随分隔样式修改而丢失。');
+    await page.locator('#preview > p').first().fill('手动修改后切换分隔线。');
+    await page.locator('summary').filter({ hasText: '模块样式' }).click();
+    await page.locator('#dividerStyleSelect').selectOption('none');
+    assert.equal(await page.locator('#preview .section-divider').count(), 0);
+    await page.locator('#dividerStyleSelect').selectOption('dots');
+    assert.equal(await page.locator('#preview .section-divider').count(), 1);
+    assert.match(await page.locator('#preview').innerText(), /手动修改后切换分隔线/);
+  });
   await check('source-change-explicit-rebuild', async (page) => {
     await page.locator('#sourceText').fill(sample);
     await page.locator('#preview > p').first().fill('保留右侧编辑。');
