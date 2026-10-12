@@ -43,6 +43,48 @@ async function check(name, fn) {
     });
     assert.deepEqual(actual, ['left', 'right', 'right', 'center']);
   });
+  await check('heading-decoration-safe-line-height', async (page) => {
+    await page.locator('#sourceText').fill('# 单价更便宜，顾客为什么不买？\n这是一段用于检查微信复制结构的正文。');
+    for (const theme of ['long', 'gov', 'minimal', 'digital', 'block', 'contrast']) {
+      await page.locator(`[data-theme="${theme}"]`).click();
+      for (const alignment of ['left', 'center', 'right']) {
+        const result = await page.evaluate(async (alignment) => {
+          preview.querySelector('h2').dataset.headingAlign = alignment;
+          const html = (await buildRichHtmlOutput()).html;
+          const holder = document.createElement('div'); holder.innerHTML = html;
+          const line = holder.querySelector('h2 > span:last-child');
+          return { html, text: line.textContent, width: line.style.width, border: line.style.borderTopWidth };
+        }, alignment);
+        assert.doesNotMatch(result.html, /(?:line-height|font-size):\s*0(?:px)?\s*[;"']/);
+        assert.equal(result.text, '');
+        assert.equal(result.width, '38px');
+        assert.equal(result.border, '3px');
+      }
+    }
+  });
+  await check('enlarged-text-safe-line-height', async (page) => {
+    await page.locator('#sourceText').fill(sample);
+    const result = await page.evaluate(async () => {
+      const paragraph = preview.querySelector('p');
+      paragraph.style.lineHeight = '8px';
+      paragraph.innerHTML = '<span style="font-size:36px">局部放大的文字应能正常换行，不会与下一行重叠。</span>';
+      markPreviewEdited();
+      const html = (await buildRichHtmlOutput()).html;
+      const holder = document.createElement('div'); holder.style.width = '375px'; holder.innerHTML = html;
+      document.body.appendChild(holder);
+      const styles = Array.from(holder.querySelectorAll('h2,p,span'), (node) => {
+        const computed = getComputedStyle(node);
+        return { text: node.textContent.trim(), fontSize: parseFloat(computed.fontSize), lineHeight: parseFloat(computed.lineHeight), value: node.style.lineHeight };
+      }).filter((node) => node.text);
+      holder.remove();
+      return styles;
+    });
+    assert.ok(result.length > 0);
+    for (const node of result) {
+      assert.ok(node.lineHeight >= node.fontSize * 1.25, `字号 ${node.fontSize}，行高 ${node.lineHeight}`);
+      assert.doesNotMatch(node.value, /px$/, '文字行高应随字号变化');
+    }
+  });
   await check('preserve-edit-on-settings', async (page) => {
     await page.locator('#sourceText').fill(sample);
     await page.locator('#preview > p').first().fill('这段手动修改必须一直保留。');
@@ -172,6 +214,10 @@ async function check(name, fn) {
     await page.evaluate(async () => { const output = await buildRichHtmlOutput(); await fallbackCopyHtml(output.html, preview.innerText); });
     const fallback = await page.evaluate(async () => { const items = await navigator.clipboard.read(); return (await items[0].getType('text/html')).text(); });
     assert.doesNotMatch(fallback, /text-align:\s*(start|end|inherit|unset)/);
+    for (const output of [html, segment, fallback]) {
+      assert.doesNotMatch(output, /(?:line-height|font-size):\s*0(?:px)?\s*[;"']/);
+      assert.doesNotMatch(output, /line-height:\s*[\d.]+px/);
+    }
   });
   await check('callout-format-and-highlight', async (page) => {
     await page.locator('#sourceText').fill('【文本框：提示】\n文本框里的内容需要保留。\n【/文本框】');

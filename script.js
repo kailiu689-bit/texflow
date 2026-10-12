@@ -619,8 +619,8 @@ function getSelectedPreviewHeading() {
 }
 
 function renderHeadingLineHtml(alignment = "center") {
-  const textAlign = ["left", "right"].includes(alignment) ? alignment : "center";
-  return `<span data-texflow-heading-line="true" style="display:block;width:100%;margin:12px 0 0;text-align:${textAlign};font-size:0;line-height:0;"><span style="display:inline-block;width:38px;height:3px;overflow:hidden;background-color:#d4472f;border-radius:999px;font-size:0;line-height:0;">&nbsp;</span></span>`;
+  const margin = alignment === "left" ? "12px auto 0 0" : alignment === "right" ? "12px 0 0 auto" : "12px auto 0";
+  return `<span data-texflow-heading-line="true" style="display:block;width:38px;margin:${margin};border-top:3px solid #d4472f;border-radius:999px;"></span>`;
 }
 
 function getPreviewSelectionRange() {
@@ -1224,6 +1224,11 @@ function inlineComputedStyles(root, original = preview) {
     for (const property of properties) {
       const value = computed.getPropertyValue(property);
       if (value) element.style.setProperty(property, property === "text-align" ? normalizeWechatAlignment(value, computed.direction) : value);
+    }
+    const fontSize = parseFloat(computed.fontSize);
+    const lineHeight = parseFloat(computed.lineHeight);
+    if (element.textContent.trim() && fontSize > 0 && Number.isFinite(lineHeight)) {
+      element.style.lineHeight = String(Math.max(1.25, lineHeight / fontSize));
     }
     element.style.removeProperty("width");
     element.style.removeProperty("min-width");
